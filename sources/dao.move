@@ -1,4 +1,4 @@
-module 0x11cb97125374872b6abb230ea850ee9f9a288f8fdc1f4106b551ea8462e7d734::dao {
+module 0x0::dao {
 
     use std::string;
 
@@ -69,7 +69,6 @@ module 0x11cb97125374872b6abb230ea850ee9f9a288f8fdc1f4106b551ea8462e7d734::dao {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            // Usuń &mut z borrow_mut – to już zwraca &mut
             let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
             if (prop_ref.id == proposal_id) {
                 vector::push_back(&mut prop_ref.votes, vote);
