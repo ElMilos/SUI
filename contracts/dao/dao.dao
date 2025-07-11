@@ -1,0 +1,57 @@
+module 0xYourAddress::SimpleDAO {
+
+    use sui::object::{Self, UID};
+    use sui::tx_context::TxContext;
+
+    struct DAO has key {
+        id: UID,
+        proposals: vector<Proposal>,
+        votes: vector<u64>,
+    }
+
+    struct Proposal has copy, drop, store {
+        id: u64,
+        description: vector<u8>,
+        vote_count: u64,
+    }
+
+    public entry fun create_dao(ctx: &mut TxContext): DAO {
+        DAO {
+            id: UID::new(ctx),
+            proposals: vector::empty(),
+            votes: vector::empty(),
+        }
+    }
+
+    public entry fun add_proposal(dao: &mut DAO, description: vector<u8>) {
+        let proposal_id = vector::length(&dao.proposals) + 1;
+        let proposal = Proposal {
+            id: proposal_id,
+            description,
+            vote_count: 0,
+        };
+        vector::push_back(&mut dao.proposals, proposal);
+    }
+
+    public entry fun vote(dao: &mut DAO, proposal_id: u64) {
+        let index = proposal_id - 1;
+        let proposal = &mut vector::borrow_mut(&mut dao.proposals, index);
+        proposal.vote_count = proposal.vote_count + 1;
+    }
+
+    public fun get_winner(dao: &DAO): u64 {
+        let mut max_votes = 0;
+        let mut winner_id = 0;
+        let len = vector::length(&dao.proposals);
+        let mut i = 0;
+        while (i < len) {
+            let p = vector::borrow(&dao.proposals, i);
+            if (p.vote_count > max_votes) {
+                max_votes = p.vote_count;
+                winner_id = p.id;
+            }
+            i = i + 1;
+        }
+        winner_id
+    }
+}
