@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, Fragment } from 'react';
 import { LifeBuoy, ChevronDown, Send } from 'lucide-react';
@@ -127,7 +126,7 @@ const Support: React.FC = () => {
             Submit a Support Ticket
           </Dialog.Title>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {['name', 'email', 'message'].map((field, idx) => (
+            {['name', 'email', 'message'].map((field) => (
               <div key={field}>
                 <label className={labelClass}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
                 {field === 'message' ? (

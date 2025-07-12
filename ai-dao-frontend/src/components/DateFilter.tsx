@@ -26,7 +26,11 @@ export const DateFilter: React.FC<DateFilterProps> = ({
   const { darkMode } = useTheme();
 
   const buttonBase = 'flex items-center px-4 py-2 border rounded-lg transition-colors duration-200';
-  const pickerBase = 'absolute right-0 mt-2 p-3 rounded-lg shadow-lg z-20';
+  const pickerBase = `
+    absolute mx-auto mt-2 p-3 rounded-lg shadow-lg z-20
+    transform -translate-x-1/2
+    md:left-auto md:right-0 md:transform-none
+  `;
 
   const buttonClass = darkMode
     ? `${buttonBase} bg-gray-900 border-gray-700 hover:bg-gray-800 text-gray-100`
@@ -59,7 +63,8 @@ export const DateFilter: React.FC<DateFilterProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-            className={pickerClass}
+            style={{ right: -30 }}
+            className={pickerClass.trim().replace(/\s+/g, ' ')}
           >
             <DateRange
               ranges={tempRange!}

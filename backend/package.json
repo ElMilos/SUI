@@ -2,27 +2,33 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "Backend server with Sui client and voting agents",
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/sui/sui_client.js",
-    "dev": "ts-node --project tsconfig.json sui/sui_client.ts",
-    "start:dev": "npm run dev",
+    "start": "node dist/server.js",
+    "start:prod": "npm run build && npm run start",
+    "dev": "npm run build && npm run start",
     "lint": "eslint . --ext .ts,.js",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "@mysten/sui": "^1.36.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
     "discord.js": "^14.21.0",
-    "dotenv": "^17.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.13",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.0",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }
 }
