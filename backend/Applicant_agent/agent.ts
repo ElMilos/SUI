@@ -16,6 +16,8 @@ const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' });
 const sender = keypair.getPublicKey().toSuiAddress();
 const discordClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+import * as Sui from '../sui/sui_client';
+
 
 async function createProposal(title: string, description: string) {
   const tx = new Transaction();
