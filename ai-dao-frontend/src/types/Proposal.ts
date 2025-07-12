@@ -1,4 +1,5 @@
 export interface Proposal {
+  date: string | number | Date;
   id: string;
   title: string;
   summary: string;

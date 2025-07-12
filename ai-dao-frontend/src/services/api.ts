@@ -31,6 +31,7 @@ const mockProposals: Proposal[] = [
       'Great idea, więcej rewardów!',
       'Zachęci więcej użytkowników.'
     ],
+    date: '2025-07-01T00:00:00.000Z'
   },
   {
     id: '0x2',
@@ -46,6 +47,7 @@ const mockProposals: Proposal[] = [
       'To będzie kosztować za dużo.',
       'Lepiej szukać optymalizacji.'
     ],
+    date: '2025-07-02T00:00:00.000Z'
   },
 ];
 
@@ -82,6 +84,7 @@ export async function fetchProposals(): Promise<Proposal[]> {
     confidence: 0,
     voted: false,
     quotes: [],
+    date: '', // Add a default value or extract from p if available
   }));
 
   return proposals;
