@@ -1,6 +1,7 @@
 import { Bell, Sun, Moon, Menu } from 'lucide-react';
 import WalletConnect from './WalletConnect';
 import { useTheme } from '../contexts/ThemeContext';
+import { BalanceTile } from './BalanceTile';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -64,6 +65,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </button>
 
         <WalletConnect />
+        <BalanceTile />
       </div>
     </header>
   );
