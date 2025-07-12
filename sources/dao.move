@@ -1,7 +1,5 @@
 module 0x0::dao {
     use std::string;
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, UID};
     use sui::transfer;
 
     /// Status propozycji: dyskusja (Open), głosowanie (Voting), zatwierdzona (Approved), odrzucona (Rejected)
@@ -33,6 +31,7 @@ module 0x0::dao {
         id: u64,
         date: u64,
         title: string::String,
+        summary: string::String,
         proposer: address,
         votes: vector<Vote>,
         status: ProposalStatus,
@@ -61,6 +60,7 @@ module 0x0::dao {
     public entry fun create_proposal(
         dao: &mut DAO,
         title: string::String,
+        summary: string::String,
         date: u64,
         ctx: &mut TxContext
     ) {
@@ -69,6 +69,7 @@ module 0x0::dao {
             id,
             date,
             title,
+            summary,
             proposer: tx_context::sender(ctx),
             votes: vector::empty<Vote>(),
             status: ProposalStatus::Open,
@@ -92,7 +93,7 @@ module 0x0::dao {
                 assert!(prop.proposer == tx_context::sender(ctx), 1);
                 assert!(prop.status == ProposalStatus::Open, 2);
                 prop.status = ProposalStatus::Voting;
-                return;
+                return
             };
             i = i + 1;
         };
@@ -124,7 +125,7 @@ module 0x0::dao {
             if (prop.id == proposal_id) {
                 assert!(prop.status == ProposalStatus::Voting, 3);
                 vector::push_back(&mut prop.votes, vote);
-                return;
+                return
             };
             i = i + 1;
         };
@@ -144,7 +145,7 @@ module 0x0::dao {
                 assert!(prop.status == ProposalStatus::Voting, 4);
                 assert!(prop.proposer == tx_context::sender(ctx), 5);
                 prop.status = ProposalStatus::Approved;
-                return;
+                return
             };
             i = i + 1;
         };
@@ -164,7 +165,7 @@ module 0x0::dao {
                 assert!(prop.status == ProposalStatus::Voting, 6);
                 assert!(prop.proposer == tx_context::sender(ctx), 7);
                 prop.status = ProposalStatus::Rejected;
-                return;
+                return
             };
             i = i + 1;
         };
@@ -189,7 +190,7 @@ module 0x0::dao {
             if (prop.id == proposal_id) {
                 assert!(prop.status == ProposalStatus::Open, 8);
                 vector::push_back(&mut prop.feedbacks, fb);
-                return;
+                return
             };
             i = i + 1;
         };
@@ -201,7 +202,7 @@ module 0x0::dao {
         let mut i = 0;
         while (i < len) {
             let p = vector::borrow(&dao.proposals, i);
-            if (p.id == id) { return option::some(*p); };
+            if (p.id == id) { return option::some(*p)};
             i = i + 1;
         };
         option::none()
