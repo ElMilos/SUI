@@ -44,7 +44,7 @@ const Settings: React.FC = () => {
     setShowEditModal(false);
   };
 
-  const sectionBg = darkMode ? 'bg-gray-800' : 'bg-white';
+  const sectionBg = darkMode ? 'bg-gray-900' : 'bg-white';
   const sectionText = darkMode ? 'text-gray-100' : 'text-gray-900';
   const sectionBorder = darkMode ? 'border border-gray-700' : '';
   const labelText = darkMode ? 'text-gray-300' : 'text-gray-700';

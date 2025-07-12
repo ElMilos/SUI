@@ -198,17 +198,20 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
       {proposals.length > 0 && <LastProposalCard proposal={proposals[0]} />}
-      <div className="flex space-x-6">
-        <div className="w-4/6">
+
+      {/* Responsive container for DecisionFlow and SideChart */}
+      <div className="flex flex-col space-y-6 md:flex-row md:space-y-0 md:space-x-6">
+        <div className="w-full md:w-4/6">
           <DecisionFlow
             proposals={filtered}
             threshold={Math.round(avgSentiment)}
           />
         </div>
-        <div className="w-2/6">
+        <div className="w-full md:w-2/6">
           <SideChart voteDistribution={voteDistribution} />
         </div>
       </div>
+
       <MetricsSection
         total={total}
         avgSentiment={avgSentiment}

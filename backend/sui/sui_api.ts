@@ -1,9 +1,14 @@
-import express from 'express';
-import { getDaoState, createProposal, voteOnProposal, DAO_ID } from './sui_client';
+import express from "express";
+import {
+  getDaoState,
+  createProposal,
+  voteOnProposal,
+  DAO_ID,
+} from "./sui_client";
 
 const router = express.Router();
 
-router.get('/state', async (req, res) => {
+router.get("/state", async (req, res) => {
   try {
     const dao = await getDaoState(DAO_ID);
     res.json(dao);
@@ -12,10 +17,10 @@ router.get('/state', async (req, res) => {
   }
 });
 
-router.post('/proposal', async (req, res) => {
+router.post("/proposal", async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) {
-    return res.status(400).json({ error: 'Missing title or description' });
+    return res.status(400).json({ error: "Missing title or description" });
   }
 
   try {
@@ -26,10 +31,12 @@ router.post('/proposal', async (req, res) => {
   }
 });
 
-router.post('/vote', async (req, res) => {
+router.post("/vote", async (req, res) => {
   const { proposalId, inFavor } = req.body;
-  if (proposalId === undefined || typeof inFavor !== 'boolean') {
-    return res.status(400).json({ error: 'Missing or invalid vote parameters' });
+  if (proposalId === undefined || typeof inFavor !== "boolean") {
+    return res
+      .status(400)
+      .json({ error: "Missing or invalid vote parameters" });
   }
 
   try {
