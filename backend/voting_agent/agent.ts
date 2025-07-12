@@ -13,21 +13,19 @@ socket.on('new_vote', (data) => {
   console.log('Nowe głosowanie rozpoczęte:', data);
 
   // Twoja logika do głosowania
-  if (confidence >= 0.7) {
-    if (sentiment >= 0.6) {
-      console.log(`✅ Głosujemy ZA propozycją ${proposalId}`);
-      // Tu możesz wywołać funkcję głosowania
-      // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, true);
-    } else {
-      console.log(`❌ Głosujemy PRZECIW propozycji ${proposalId}`);
-      // Tu możesz wywołać funkcję głosowania
-      // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, false);
+  if (confidence < 0.7) {
+      console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
+      suiClient.voteOnProposal(proposalId, 1,sentiment, confidence); // <- jeśli masz taką opcję
+      return;
     }
-  } else {
-    console.log(`⚠️ Pewność jest zbyt niska, wstrzymujemy się od głosu`);
-    // Tu możesz wywołać funkcję głosowania, żeby się wstrzymać
-    // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, "abstain");
-  }
+
+    if (sentiment >= 0.6) {
+      console.log(`✅ Głosujemy ZA. Pewność: ${confidence.toFixed(2)}`);
+      suiClient.voteOnProposal(proposalId, 2 ,sentiment, confidence); // <- jeśli masz taką opcję
+    } else {
+      console.log(`❌ Głosujemy PRZECIW. Pewność: ${confidence.toFixed(2)}`);
+      suiClient.voteOnProposal(proposalId, 0 ,sentiment, confidence); // <- jeśli masz taką opcję
+    }
 });
 
 // Funkcja główna wykonująca analizę sentymentu

@@ -139,9 +139,6 @@ export async function createProposal(title: string, description: string): Promis
 // 🆕 Start voting (tylko autor)
 export async function startVoting(
   proposalId: number,
-  voteCode: 0 | 1 | 2,
-  sentiment: number,
-  confidence: number,
 ): Promise<void> {
   const tx = new Transaction();
 
@@ -166,14 +163,37 @@ export async function startVoting(
     ],
   });
 
-  // Dodanie głosu
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
+}
+
+export async function voteOnProposal(
+  proposalId: number,
+  voteCode: 0 | 1 | 2,
+  sentiment: number,
+  confidence: number,
+): Promise<void> {
+  const tx = new Transaction();
+
+  const daoObject = tx.object(DAO_ID as string);
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
     arguments: [
-      daoObject, // używamy tego samego obiektu
+      daoObject,
       tx.pure.u64(proposalId),
       tx.pure.u8(voteCode),
-      tx.pure.u64(Math.floor(Date.now() / 1000)), // timestamp w sekundach
+      tx.pure.u64(Math.floor(Date.now() / 1000)),
       tx.pure.u64(sentiment),
       tx.pure.u64(confidence),
     ],
@@ -189,10 +209,8 @@ export async function startVoting(
     requestType: 'WaitForLocalExecution',
   });
 
-  console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
+  console.log(`✅ Vote casted for proposal ${proposalId}:`, result.digest);
 }
-
-
 
 // 🆕 Zatwierdzenie propozycji
 export async function approveProposal(proposalId: number): Promise<void> {
