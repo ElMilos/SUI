@@ -4,10 +4,7 @@ import discord
 import asyncio
 
 load_dotenv()
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID"))
-TARGET_USER_ID = int(os.getenv("TARGET_USERNAME_ID"))
-
+from config import TOKEN, CHANNEL_ID, TARGET_USER_ID
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
