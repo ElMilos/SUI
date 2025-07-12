@@ -1,5 +1,5 @@
 # 🧠 AI DAO Operator on SUI
-**An autonomous AI agent acting as a DAO participant on the SUI blockchain — MVP in 48 hours.**
+**An autonomous AI agent acting as a DAO participant on the SUI blockchain — MVP**
 
 ---
 
@@ -11,8 +11,6 @@ This project introduces an intelligent AI agent that:
 - **Analyzes off-chain discussions**
 - **Makes autonomous voting decisions**
 - **Generates reports and recommendations for DAO members**
-
-Eventually, the agent may also **submit its own proposals** and **learn from community feedback**, acting as a full DAO participant.
 
 ---
 
@@ -51,9 +49,8 @@ Eventually, the agent may also **submit its own proposals** and **learn from com
 ## 🛠️ Tech Stack
 
 | **Area**           | **Tools**                                    |
-|--------------------|-----------------------------------------------|
+|--------------------|----------------------------------------------|
 | Blockchain         | SUI + Move                                   |
-| Backend            | Python / Node.js + NLP (HuggingFace Transformers) |
+| Backend            | Python / Node.js                             |
 | Off-chain APIs     | Discord, Twitter                             |
 | Frontend           | React Dashboard                              |
-| Wallet Integration | Wallet Connect (for signing votes)           |
