@@ -5,7 +5,7 @@ edition = "2024.beta"
 # published-at = "0x11cb97125374872b6abb230ea850ee9f9a288f8fdc1f4106b551ea8462e7d734"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/devnet" }
 
 [addresses]
 dao = "0x0"
