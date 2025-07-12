@@ -1,18 +1,16 @@
 from pysui import SyncClient, SuiConfig
-from pysui.sui.sui_crypto import SuiKeypair
-from pysui.sui.sui_txn import SuiTransaction
 from pysui.sui.sui_config import SuiConfig
 from pysui.sui.sui_types import SuiString, SuiBoolean, SuiU64
+from pysui.sui import SuiTransaction
 import os
-from dotenv import load_dotenv
 
 
 # Konfiguracja klienta
 config = SuiConfig.default_config()
 client = SyncClient(config)
 
-PACKAGE_ID = "0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5"        # ← podaj swoje ID paczki
-DAO_ID = "0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e"            # ← podaj swoje DAO object ID
+PACKAGE_ID = "0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5"       
+DAO_ID = "0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e"            
 
 ### ---- DAO OPERATIONS ---- ###
 
