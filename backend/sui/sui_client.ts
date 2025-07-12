@@ -8,6 +8,7 @@ dotenv.config();
 // Wczytywanie zmiennych środowiskowych
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
 const DAO_ID = process.env.SUI_DAO_ID;
+const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 
 // Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
@@ -39,6 +40,7 @@ interface DaoProposal {
     title?: string;
     description?: string;
     votes?: any;
+    status?: string;
   };
 }
 
@@ -46,6 +48,7 @@ interface DaoObject {
   proposals: DaoProposal[];
 }
 
+// ✅ Istniejąca funkcja: pobiera DAO
 export async function getDaoState(daoId: string): Promise<DaoObject> {
   const object: SuiObjectResponse = await client.getObject({
     id: daoId,
@@ -60,7 +63,6 @@ export async function getDaoState(daoId: string): Promise<DaoObject> {
     throw new Error('Brak pola `data` w odpowiedzi Sui.');
   }
 
-  console.log('RAW DAO OBJECT:', JSON.stringify(object, null, 2));
 
   const content: any = (object.data as any).content;
   if (!content) {
@@ -84,8 +86,29 @@ export async function getDaoState(daoId: string): Promise<DaoObject> {
     throw new Error('Pole `fields.proposals` nie jest tablicą.');
   }
 
-  console.log('✅ Parsed DAO fields:', fields);
   return fields;
+}
+
+
+// 🆕 Tworzenie DAO
+export async function createDao(): Promise<void> {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::create_dao`,
+    arguments: [],
+  });
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log('✅ DAO created:', result.digest);
 }
 
 export async function createProposal(daoId: string, title: string, description: string): Promise<void> {
@@ -93,10 +116,9 @@ export async function createProposal(daoId: string, title: string, description: 
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
-      tx.pure.string(title),
-      tx.pure.string(description),
-      tx.pure.u64(0),
       tx.pure.address(daoId),
+      tx.pure.string(title),
+      tx.pure.u64(Date.now()),
     ],
   });
 
@@ -113,14 +135,35 @@ export async function createProposal(daoId: string, title: string, description: 
   console.log('✅ Proposal created:', result.digest);
 }
 
-export async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolean): Promise<void> {
+// 🆕 Start voting (tylko autor)
+export async function startVoting(
+  daoId: string,
+  proposalId: number,
+  voteCode: 0 | 1 | 2,
+  sentiment: number,
+  confidence: number,
+): Promise<void> {
   const tx = new Transaction();
+
+  // 1. Rozpocznij głosowanie
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::start_voting`,
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+    ],
+  });
+
+  // 2. Dodaj głos
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
     arguments: [
       tx.pure.address(daoId),
       tx.pure.u64(proposalId),
-      tx.pure.bool(inFavor),
+      tx.pure.u8(voteCode),
+      tx.pure.u64(Date.now()),
+      tx.pure.u64(sentiment),
+      tx.pure.u64(confidence),
     ],
   });
 
@@ -134,34 +177,80 @@ export async function voteOnProposal(daoId: string, proposalId: number, inFavor:
     requestType: 'WaitForLocalExecution',
   });
 
-  console.log(`✅ Voted ${inFavor ? 'FOR' : 'AGAINST'} proposal ${proposalId}:`, result.digest);
+  console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
 }
 
-function mockSentimentAnalysis(): boolean {
-  return Math.random() > 0.5;
+// 🆕 Zatwierdzenie propozycji
+export async function approveProposal(daoId: string, proposalId: number): Promise<void> {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::approve_proposal`,
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+    ],
+  });
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log('✅ Proposal approved:', result.digest);
 }
 
-export async function agentDecisionLoop(): Promise<void> {
-  try {
-    const dao = await getDaoState(DAO_ID as string);
-    const proposals = dao.proposals;
-    if (!proposals.length) {
-      console.log('Brak propozycji.');
-      return;
-    }
-    const latest = proposals[proposals.length - 1];
-    const proposalId = parseInt(latest.fields.id, 10);
-    if (mockSentimentAnalysis()) {
-      console.log(`Głosuję ZA propozycją ${proposalId}`);
-      await voteOnProposal(DAO_ID as string, proposalId, true);
-    } else {
-      console.log(`Głosuję PRZECIW propozycji ${proposalId}`);
-      await voteOnProposal(DAO_ID as string, proposalId, false);
-    }
-  } catch (err) {
-    console.error('‼️ Błąd w agentDecisionLoop:', (err as Error).message);
-  }
+
+// 🆕 Odrzucenie propozycji
+export async function rejectProposal(daoId: string, proposalId: number): Promise<void> {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::reject_proposal`,
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+    ],
+  });
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log('❌ Proposal rejected:', result.digest);
 }
 
-// Uruchomienie
-agentDecisionLoop();
+// 🆕 Dodawanie feedbacku (komentarza)
+export async function giveFeedback(daoId: string, proposalId: number, reaction: string): Promise<void> {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::give_feedback`,
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+      tx.pure.string(reaction),
+    ],
+  });
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log('💬 Feedback sent:', result.digest);
+}
+
