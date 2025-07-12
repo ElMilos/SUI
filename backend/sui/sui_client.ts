@@ -138,7 +138,7 @@ export async function createProposal(title: string, description: string): Promis
 
 // 🆕 Start voting (tylko autor)
 export async function startVoting(
-  proposalId: number,
+  proposalId: number
 ): Promise<void> {
   const tx = new Transaction();
 

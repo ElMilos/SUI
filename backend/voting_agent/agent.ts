@@ -49,16 +49,16 @@ async function main() {
 
     if (confidence < 0.7) {
       console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
-      // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, "abstain"); // <- jeśli masz taką opcję
+      await suiClient.voteOnProposal(proposalId, 1,score, confidence); // <- jeśli masz taką opcję
       return;
     }
 
     if (score >= 0.6) {
       console.log(`✅ Głosujemy ZA. Pewność: ${confidence.toFixed(2)}`);
-      // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, true);
+      await suiClient.voteOnProposal(proposalId, 2 ,score, confidence); // <- jeśli masz taką opcję
     } else {
       console.log(`❌ Głosujemy PRZECIW. Pewność: ${confidence.toFixed(2)}`);
-      // await suiClient.voteOnProposal(suiClient.DAO_ID, proposalId, false);
+      await suiClient.voteOnProposal(proposalId, 0 ,score, confidence); // <- jeśli masz taką opcję
     }
 
   } catch (err: any) {
