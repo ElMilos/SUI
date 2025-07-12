@@ -9,10 +9,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen w-screen bg-gray-50 dark:bg-gray-800">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main content wrapper */}
       <div className="flex flex-col flex-1 min-w-0">
         <Navbar />
 

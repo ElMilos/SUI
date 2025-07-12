@@ -1,75 +1,62 @@
-// src/components/DecisionFlow.tsx
 import { useState, useMemo } from "react";
 import { Switch } from "@headlessui/react";
-import { Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import type { Proposal } from '../types';
 
 type PortKey = "yes" | "no" | "abstain";
 
-interface Port {
-  label: string;
-  count: number;
-  enabled: boolean;
+interface DecisionFlowProps {
+  proposals: Proposal[];
+  threshold: number;
 }
 
-export default function DecisionFlow() {
-  // Symulowane dane z backendu/serwisu
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [processed, setProcessed] = useState(56); // ile propozycji przetworzono
-  const [ports, setPorts] = useState<Record<PortKey, Port>>({
-    yes: { label: "Yes", count: 34, enabled: true },
-    no: { label: "No", count: 15, enabled: true },
-    abstain: { label: "Abstain", count: 7, enabled: false },
-  });
+export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps) {
+  const processed = proposals.length;
 
-  // próg sentymentu
-  const [threshold, setThreshold] = useState(70);
-  const thresholdLabel = useMemo(() => `${threshold}%`, [threshold]);
+  const counts = useMemo(() => {
+    const c: Record<PortKey, number> = { yes: 0, no: 0, abstain: 0 };
+    proposals.forEach((p) => { c[p.aiDecision]++; });
+    return c;
+  }, [proposals]);
 
-  // toggle auto-voting
+  const [enabledPorts, setEnabledPorts] = useState<Record<PortKey, boolean>>({ yes: true, no: true, abstain: true });
+
   const togglePort = (key: PortKey) => {
-    setPorts((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], enabled: !prev[key].enabled },
-    }));
+    setEnabledPorts((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // przygotuj ścieżki SVG: grubość proporcjonalna do count/processed
   const paths = useMemo(() => {
     const keys: PortKey[] = ["yes", "no", "abstain"];
     return keys.map((key, i) => {
-      const p = ports[key];
-      if (!p.enabled || processed === 0) return null;
-      const w = (p.count / processed) * 20 + 2;
-      const y1 = 60;
-      const y2 = 40 + i * 40;
-      const color =
-        key === "yes" ? "#10B981" : key === "no" ? "#EF4444" : "#FBBF24";
+      const count = counts[key];
+      if (!enabledPorts[key] || processed === 0) return null;
+      const strokeWidth = (count / processed) * 40 + 2;
+      const yStart = 30;
+      const yEnd = 40 + i * 60;
+      const path = `M50,${yStart} C250,${yStart} 250,${yEnd} 450,${yEnd}`;
       return (
-        <path
+        <motion.path
           key={key}
-          d={`M100,${y1} C200,${y1} 200,${y2} 300,${y2}`}
-          stroke={color}
-          strokeWidth={w}
+          d={path}
+          stroke={key === "yes" ? "#10B981" : key === "no" ? "#EF4444" : "#FBBF24"}
+          strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 1, ease: "easeInOut" }}
         />
       );
     });
-  }, [ports, processed]);
+  }, [counts, enabledPorts, processed]);
 
   return (
     <div className="bg-gray-900 text-white rounded-xl p-6">
-      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">DECISION FLOW</h3>
-        <button className="flex items-center space-x-1 bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded">
-          <Plus className="w-4 h-4" />
-          <span className="text-sm">NEW PROPOSAL</span>
-        </button>
       </div>
 
       <div className="flex">
-        {/* Processed Proposals */}
         <div className="w-24 flex flex-col items-center">
           <div className="bg-gray-800 rounded p-2 mb-2 text-center">
             <span className="block text-xs">PROCESSED</span>
@@ -77,33 +64,27 @@ export default function DecisionFlow() {
           </div>
         </div>
 
-        {/* SVG Flow */}
         <div className="flex-1">
-          <svg width="100%" height="200">
+          <svg viewBox="0 0 500 200" className="w-full h-48">
             {paths}
           </svg>
         </div>
 
-        {/* Ports */}
-        <div className="w-36 space-y-3">
-          {Object.entries(ports).map(([key, p]) => (
+        <div className="pt-2 w-36 space-y-6">
+          {(['yes', 'no', 'abstain'] as PortKey[]).map((key) => (
             <div key={key} className="flex items-center justify-between">
               <div className="text-sm">
-                <div>{p.label}</div>
-                <div className="text-xs text-gray-400">{p.count} votes</div>
+                <div>{key.charAt(0).toUpperCase() + key.slice(1)}</div>
+                <div className="text-xs text-gray-400">{counts[key]} votes</div>
               </div>
               <Switch
-                checked={p.enabled}
-                onChange={() => togglePort(key as PortKey)}
-                className={`${
-                  p.enabled ? "bg-indigo-500" : "bg-gray-700"
-                } relative inline-flex h-5 w-9 items-center rounded-full transition`}
+                checked={enabledPorts[key]}
+                onChange={() => togglePort(key)}
+                className={`${enabledPorts[key] ? "bg-indigo-500" : "bg-gray-700"} relative inline-flex h-5 w-9 items-center rounded-full transition`}
               >
-                <span className="sr-only">Toggle {p.label}</span>
+                <span className="sr-only">Toggle {key}</span>
                 <span
-                  className={`${
-                    p.enabled ? "translate-x-5" : "translate-x-1"
-                  } inline-block h-3 w-3 transform rounded-full bg-white transition`}
+                  className={`${enabledPorts[key] ? "translate-x-5" : "translate-x-1"} inline-block h-3 w-3 transform rounded-full bg-white transition`}
                 />
               </Switch>
             </div>
@@ -111,20 +92,14 @@ export default function DecisionFlow() {
         </div>
       </div>
 
-      {/* Threshold Slider */}
-      <div className="mt-6 flex items-center">
-        <div className="w-24 text-sm">Sentiment ≥</div>
-        <div className="flex-1 px-4">
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={threshold}
-            onChange={(e) => setThreshold(Number(e.target.value))}
-            className="w-full"
-          />
+      <div className="mt-6">
+        <div className="flex justify-between text-sm mb-1">
+          <span>Sentiment Threshold</span>
+          <span>{threshold}%</span>
         </div>
-        <div className="w-16 text-right font-semibold">{thresholdLabel}</div>
+        <div className="w-full bg-gray-700 rounded-full h-2">
+          <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${threshold}%` }} />
+        </div>
       </div>
     </div>
   );
