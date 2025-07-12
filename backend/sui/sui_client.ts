@@ -1,7 +1,6 @@
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { SuiClient, getFullnodeUrl, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
-import { pure } from '@mysten/sui/transactions';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -56,7 +55,12 @@ async function createProposal(daoId: string, title: string, description: string)
 
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
-    arguments: [tx.pure(daoId), tx.pure(title), tx.pure(description)],
+      arguments: [
+    tx.pure.string('tekst'),
+    tx.pure.u64(123),
+    tx.pure.bool(true),
+    tx.pure.address('0x...'),
+  ],
   });
 
   const txBytes = await tx.build({ client });
@@ -77,7 +81,12 @@ async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolea
 
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
-    arguments: [tx.pure(daoId), tx.pure(proposalId), tx.pure(inFavor)],
+      arguments: [
+    tx.pure.string('tekst'),
+    tx.pure.u64(123),
+    tx.pure.bool(true),
+    tx.pure.address('0x...'),
+  ],
   });
 
   const txBytes = await tx.build({ client });
