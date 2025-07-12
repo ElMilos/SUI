@@ -1,52 +1,59 @@
-🧠 AI DAO Operator on SUI
-An autonomous AI agent acting as a DAO participant on the SUI blockchain — MVP in 48 hours.
+# 🧠 AI DAO Operator on SUI
+**An autonomous AI agent acting as a DAO participant on the SUI blockchain — MVP in 48 hours.**
 
-📌 Project Overview
+---
+
+## 📌 Project Overview
+
 This project introduces an intelligent AI agent that:
 
-Interacts with on-chain DAO proposals
+- **Interacts with on-chain DAO proposals**
+- **Analyzes off-chain discussions**
+- **Makes autonomous voting decisions**
+- **Generates reports and recommendations for DAO members**
 
-Analyzes off-chain discussions
+Eventually, the agent may also **submit its own proposals** and **learn from community feedback**, acting as a full DAO participant.
 
-Makes autonomous voting decisions
+---
 
-Generates reports and recommendations for DAO members
+## ✅ MVP — Core Features
 
-Eventually, the agent may also submit its own proposals and learn from community feedback, acting as a full DAO participant.
+### 🔗 **DAO Interface (SUI)**
+- Connects to a basic DAO on the SUI testnet  
+- Fetches on-chain proposals and vote results
 
-✅ MVP — Core Features
-🔗 DAO Interface (SUI)
-Connects to a basic DAO on the SUI testnet
+### 🗳️ **Automated Voting**
+- AI votes based on simple rules (e.g., vote "yes" if >70% of off-chain sentiment is positive)
 
-Fetches on-chain proposals and vote results
+### 🌐 **Off-chain Monitoring**
+- Retrieves discussion data from Discord, Twitter, or forums  
+- Uses a basic sentiment analysis model (e.g., HuggingFace pipeline)
 
-🗳️ Automated Voting
-AI votes based on simple rules (e.g., vote "yes" if >70% of off-chain sentiment is positive)
+### 🧾 **Reporting**
+- Generates short summaries and voting recommendations  
+- Displays decisions and rationale in a web dashboard
 
-🌐 Off-chain Monitoring
-Retrieves discussion data from Discord, Twitter, or forums
+---
 
-Uses a basic sentiment analysis model (e.g., HuggingFace pipeline)
+## 🚀 Advanced & Innovative Features (Future Scope)
 
-🧾 Reporting
-Generates short summaries and voting recommendations
+### 🧠 **Community Preference Learning**
+- Learns from user reactions and adapts voting decisions
 
-Displays decisions and rationale in a web dashboard
+### 📝 **Proposal Initiation**
+- AI agent can create new DAO proposals based on its analysis
 
-🚀 Advanced & Innovative Features (Future Scope)
-Community Preference Learning
-Learns from user reactions and adapts voting decisions
+### 📊 **Decision Impact Simulation**
+- Estimates the potential outcome of decisions using historical on-chain data
 
-Proposal Initiation
-AI agent can create new DAO proposals based on its analysis
+---
 
-Decision Impact Simulation
-Estimates the potential outcome of decisions using historical on-chain data
+## 🛠️ Tech Stack
 
-🛠️ Tech Stack
-Area	Tools
-Blockchain	SUI + Move
-Backend	Python / Node.js + NLP (HuggingFace Transformers)
-Off-chain APIs	Discord, Twitter
-Frontend	React Dashboard
-Wallet Integration	Wallet Connect (for signing votes)
+| **Area**           | **Tools**                                    |
+|--------------------|-----------------------------------------------|
+| Blockchain         | SUI + Move                                   |
+| Backend            | Python / Node.js + NLP (HuggingFace Transformers) |
+| Off-chain APIs     | Discord, Twitter                             |
+| Frontend           | React Dashboard                              |
+| Wallet Integration | Wallet Connect (for signing votes)           |
