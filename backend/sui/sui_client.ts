@@ -2,7 +2,6 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { SuiClient, getFullnodeUrl, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import * as dotenv from 'dotenv';
-
 dotenv.config();
 
 // Wczytywanie zmiennych środowiskowych
@@ -110,14 +109,16 @@ export async function createDao(): Promise<void> {
   console.log('✅ DAO created:', result.digest);
 }
 
-export async function createProposal(daoId: string, title: string, description: string): Promise<void> {
+export async function createProposal(title: string, description: string): Promise<void> {
   const tx = new Transaction();
+  
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
-      tx.pure.address(daoId),
-      tx.pure.string(title),
-      tx.pure.u64(Date.now()),
+      tx.object(DAO_ID as string),               // &mut DAO
+      tx.pure.string(title),                     // title: string
+      tx.pure.string(description),               // summary: string
+      tx.pure.u64(Date.now()),                   // date: u64
     ],
   });
 
@@ -134,9 +135,9 @@ export async function createProposal(daoId: string, title: string, description: 
   console.log('✅ Proposal created:', result.digest);
 }
 
+
 // 🆕 Start voting (tylko autor)
 export async function startVoting(
-  daoId: string,
   proposalId: number,
   voteCode: 0 | 1 | 2,
   sentiment: number,
@@ -144,16 +145,19 @@ export async function startVoting(
 ): Promise<void> {
   const tx = new Transaction();
 
+  // DAO_ID jako obiekt mutowalny
+  const daoObject = tx.object(DAO_ID as string); // &mut DAO
+
   // Rozpocznij głosowanie na DAO
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::start_voting`,
     arguments: [
-      tx.pure.address(daoId),
+      daoObject,
       tx.pure.u64(proposalId),
     ],
   });
 
-  // Rozsyłanie sygnału do innych agentów na całej sieci
+    // Rozsyłanie sygnału do innych agentów na całej sieci
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::notify_agents`,
     arguments: [
@@ -166,10 +170,10 @@ export async function startVoting(
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
     arguments: [
-      tx.pure.address(daoId),
+      daoObject, // używamy tego samego obiektu
       tx.pure.u64(proposalId),
       tx.pure.u8(voteCode),
-      tx.pure.u64(Date.now()),
+      tx.pure.u64(Math.floor(Date.now() / 1000)), // timestamp w sekundach
       tx.pure.u64(sentiment),
       tx.pure.u64(confidence),
     ],
@@ -189,13 +193,17 @@ export async function startVoting(
 }
 
 
+
 // 🆕 Zatwierdzenie propozycji
-export async function approveProposal(daoId: string, proposalId: number): Promise<void> {
+export async function approveProposal(proposalId: number): Promise<void> {
   const tx = new Transaction();
+
+  const daoObject = tx.object(DAO_ID as string); // DAO jako obiekt z mutacją
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::approve_proposal`,
     arguments: [
-      tx.pure.address(daoId),
+      daoObject,
       tx.pure.u64(proposalId),
     ],
   });
@@ -214,13 +222,17 @@ export async function approveProposal(daoId: string, proposalId: number): Promis
 }
 
 
+
 // 🆕 Odrzucenie propozycji
-export async function rejectProposal(daoId: string, proposalId: number): Promise<void> {
+export async function rejectProposal(proposalId: number): Promise<void> {
   const tx = new Transaction();
+
+  const daoObject = tx.object(DAO_ID as string); // DAO jako mutowalny obiekt
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::reject_proposal`,
     arguments: [
-      tx.pure.address(daoId),
+      daoObject,
       tx.pure.u64(proposalId),
     ],
   });
@@ -238,15 +250,16 @@ export async function rejectProposal(daoId: string, proposalId: number): Promise
   console.log('❌ Proposal rejected:', result.digest);
 }
 
-// 🆕 Dodawanie feedbacku (komentarza)
-export async function giveFeedback(daoId: string, proposalId: number, reaction: string): Promise<void> {
+
+export async function giveFeedback(proposalId: number, reaction: string): Promise<void> {
   const tx = new Transaction();
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::give_feedback`,
     arguments: [
-      tx.pure.address(daoId),
-      tx.pure.u64(proposalId),
-      tx.pure.string(reaction),
+      tx.object(DAO_ID as string),           // poprawnie: &mut DAO
+      tx.pure.u64(proposalId),               // proposal ID
+      tx.pure.string(reaction),              // feedback string
     ],
   });
 
@@ -262,4 +275,8 @@ export async function giveFeedback(daoId: string, proposalId: number, reaction: 
 
   console.log('💬 Feedback sent:', result.digest);
 }
+
+
+
+
 
