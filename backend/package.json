@@ -1,22 +1,27 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "Backend server with Sui client and voting agents",
+  "main": "dist/index.js",
   "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/sui/sui_client.js",
+    "dev": "ts-node --project tsconfig.json sui/sui_client.ts",
+    "start:dev": "npm run dev",
+    "lint": "eslint . --ext .ts,.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
   "dependencies": {
+    "@mysten/sui": "^1.36.0",
     "dotenv": "^17.2.0"
   },
   "devDependencies": {
-    "@mysten/sui": "^1.36.0",
-    "@types/node": "^24.0.13",
+    "typescript": "^5.8.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "@types/node": "^24.0.13",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0"
   }
 }

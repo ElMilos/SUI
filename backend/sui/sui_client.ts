@@ -9,16 +9,13 @@ const PACKAGE_ID = '0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279f
 const DAO_ID = '0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e';
 const FULLNODE_URL = getFullnodeUrl('devnet');
 
-// 🔐 Klucz prywatny z .env
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
-
 if (!PRIVATE_KEY_BASE64) {
   throw new Error('Brakuje klucza prywatnego (SUI_PRIVATE_KEY) w pliku .env');
 }
 
 const secretKey = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
-
 const client = new SuiClient({ url: FULLNODE_URL });
 
 interface DaoProposal {
@@ -40,27 +37,58 @@ async function getDaoState(daoId: string): Promise<DaoObject> {
     options: { showContent: true },
   });
 
-const content = object.data?.content;
-if (!content || content.dataType !== 'moveObject' || !('fields' in content)) {
-  throw new Error('Nieprawidłowa struktura DAO');
-}
+  // 1) Jeśli zwrócono błąd "notExists"
+  if ('error' in object && object.error?.code === 'notExists') {
+    throw new Error(`Obiekt DAO o ID ${daoId} nie istnieje.`);
+  }
 
-const fields = content.fields as unknown as DaoObject;
-  console.log('DAO:', fields);
+  // 2) Mamy gałąź z danymi
+  if (!('data' in object) || !object.data) {
+    throw new Error('Brak pola `data` w odpowiedzi Sui.');
+  }
+
+  // 3) Wypisujemy surowy JSON dla debugu
+  console.log('RAW DAO OBJECT:', JSON.stringify(object, null, 2));
+
+  // 4) Rzutujemy content na `any`, żeby TS nie wieszał się na unionach wewnątrz SuiObjectResponse
+  const content: any = (object.data as any).content;
+  if (!content) {
+    throw new Error('Brak pola `data.content` – prawdopodobnie używasz złego object ID.');
+  }
+
+  // 5) Obsługa różnych typów content.dataType
+  switch (content.dataType as string) {
+    case 'moveObject':
+      if (!('fields' in content)) {
+        throw new Error('`moveObject` bez pola `fields` – struktura niezgodna.');
+      }
+      break;
+    case 'package':
+      throw new Error('To jest paczka (package), a nie instancja zasobu DAO.');
+    default:
+      throw new Error(`Nieznany dataType: ${(content.dataType as string)}`);
+  }
+
+  // 6) Rzutujemy fields na naszą strukturę DaoObject
+  const fields = (content as any).fields as DaoObject;
+  if (!Array.isArray(fields.proposals)) {
+    throw new Error('Pole `fields.proposals` nie jest tablicą.');
+  }
+
+  console.log('✅ Parsed DAO fields:', fields);
   return fields;
 }
 
 async function createProposal(daoId: string, title: string, description: string): Promise<void> {
   const tx = new Transaction();
-
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
-      arguments: [
-    tx.pure.string('tekst'),
-    tx.pure.u64(123),
-    tx.pure.bool(true),
-    tx.pure.address('0x...'),
-  ],
+    arguments: [
+      tx.pure.string(title),
+      tx.pure.string(description),
+      tx.pure.u64(0),
+      tx.pure.address(daoId),
+    ],
   });
 
   const txBytes = await tx.build({ client });
@@ -78,15 +106,13 @@ async function createProposal(daoId: string, title: string, description: string)
 
 async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolean): Promise<void> {
   const tx = new Transaction();
-
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
-      arguments: [
-    tx.pure.string('tekst'),
-    tx.pure.u64(123),
-    tx.pure.bool(true),
-    tx.pure.address('0x...'),
-  ],
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+      tx.pure.bool(inFavor),
+    ],
   });
 
   const txBytes = await tx.build({ client });
@@ -99,33 +125,33 @@ async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolea
     requestType: 'WaitForLocalExecution',
   });
 
-  console.log('✅ Voted:', result.digest);
+  console.log(`✅ Voted ${inFavor ? 'FOR' : 'AGAINST'} proposal ${proposalId}:`, result.digest);
 }
 
-// Mock analiza sentymentu
 function mockSentimentAnalysis(): boolean {
-  return true;
+  return Math.random() > 0.5;
 }
 
 async function agentDecisionLoop(): Promise<void> {
-  const dao = await getDaoState(DAO_ID);
-  const proposals = dao.proposals ?? [];
-
-  if (!proposals.length) {
-    console.log('Brak propozycji.');
-    return;
-  }
-
-  const latest = proposals[proposals.length - 1];
-  const proposalId = parseInt(latest.fields.id);
-
-  if (mockSentimentAnalysis()) {
-    console.log(`Głosuję ZA propozycją ${proposalId}`);
-    await voteOnProposal(DAO_ID, proposalId, true);
-  } else {
-    console.log(`Głosuję PRZECIW propozycji ${proposalId}`);
-    await voteOnProposal(DAO_ID, proposalId, false);
+  try {
+    const dao = await getDaoState(DAO_ID);
+    const proposals = dao.proposals;
+    if (!proposals.length) {
+      console.log('Brak propozycji.');
+      return;
+    }
+    const latest = proposals[proposals.length - 1];
+    const proposalId = parseInt(latest.fields.id, 10);
+    if (mockSentimentAnalysis()) {
+      console.log(`Głosuję ZA propozycją ${proposalId}`);
+      await voteOnProposal(DAO_ID, proposalId, true);
+    } else {
+      console.log(`Głosuję PRZECIW propozycji ${proposalId}`);
+      await voteOnProposal(DAO_ID, proposalId, false);
+    }
+  } catch (err) {
+    console.error('‼️ Błąd w agentDecisionLoop:', (err as Error).message);
   }
 }
 
-agentDecisionLoop().catch(console.error);
+agentDecisionLoop();

@@ -24,3 +24,5 @@ Editor directories and files
 *.njsproj
 *.sln
 *.sw?
+
+.env
