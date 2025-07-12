@@ -5,15 +5,31 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const PACKAGE_ID = '0x693c15d34aea1d8d1791ba253bfb51b371f38a098b6f8459b2a5e5dc9bd0f459';
-export const DAO_ID = '0x266788581219b77cbfc80bb96e130de8d26f1ddc4701a086395fc94db6df5478';
+// Wczytywanie zmiennych środowiskowych
+const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
+const DAO_ID = process.env.SUI_DAO_ID;
 const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
-
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
+
+// Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
+const SUI_NETWORK = process.env.SUI_NETWORK; // np. 'devnet'
+const FULLNODE_URL = process.env.SUI_FULLNODE_URL || (SUI_NETWORK ? getFullnodeUrl(SUI_NETWORK as 'mainnet' | 'testnet' | 'devnet' | 'localnet') : undefined);
+
+// Walidacja
+if (!PACKAGE_ID) {
+  throw new Error('Brakuje zmiennej środowiskowej SUI_PACKAGE_ID w pliku .env');
+}
+if (!DAO_ID) {
+  throw new Error('Brakuje zmiennej środowiskowej SUI_DAO_ID w pliku .env');
+}
 if (!PRIVATE_KEY_BASE64) {
-  throw new Error('Brakuje klucza prywatnego (SUI_PRIVATE_KEY) w pliku .env');
+  throw new Error('Brakuje zmiennej środowiskowej SUI_PRIVATE_KEY w pliku .env');
+}
+if (!FULLNODE_URL) {
+  throw new Error('Brakuje zmiennej środowiskowej SUI_FULLNODE_URL lub SUI_NETWORK w pliku .env');
 }
 
+// Inicjalizacja klucza i klienta
 const secretKey = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const client = new SuiClient({ url: FULLNODE_URL });
@@ -47,6 +63,7 @@ export async function getDaoState(daoId: string): Promise<DaoObject> {
     throw new Error('Brak pola `data` w odpowiedzi Sui.');
   }
 
+
   const content: any = (object.data as any).content;
   if (!content) {
     throw new Error('Brak pola `data.content` – prawdopodobnie używasz złego object ID.');
@@ -72,6 +89,7 @@ export async function getDaoState(daoId: string): Promise<DaoObject> {
   return fields;
 }
 
+
 // 🆕 Tworzenie DAO
 export async function createDao(): Promise<void> {
   const tx = new Transaction();
@@ -93,7 +111,6 @@ export async function createDao(): Promise<void> {
   console.log('✅ DAO created:', result.digest);
 }
 
-// ✅ Istniejąca: Tworzenie propozycji (title + description + timestamp = 0)
 export async function createProposal(daoId: string, title: string, description: string): Promise<void> {
   const tx = new Transaction();
   tx.moveCall({
@@ -187,6 +204,7 @@ export async function approveProposal(daoId: string, proposalId: number): Promis
   console.log('✅ Proposal approved:', result.digest);
 }
 
+
 // 🆕 Odrzucenie propozycji
 export async function rejectProposal(daoId: string, proposalId: number): Promise<void> {
   const tx = new Transaction();
@@ -235,3 +253,4 @@ export async function giveFeedback(daoId: string, proposalId: number, reaction: 
 
   console.log('💬 Feedback sent:', result.digest);
 }
+

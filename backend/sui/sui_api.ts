@@ -1,35 +1,47 @@
 import express from 'express';
-import { getDaoState, createProposal, startVoting, DAO_ID } from './sui_client';
+import { getDaoState, createProposal, startVoting } from './sui_client';
+
 
 const router = express.Router();
+const DAO_ID = process.env.SUI_DAO_ID;
+if (!DAO_ID) {
+  throw new Error('Brakuje zmiennej środowiskowej SUI_DAO_ID w pliku .env');
+}
 
-router.get('/state', async (req, res) => {
+async function broadcastProposals(io: import('socket.io').Server) {
+  const dao = await getDaoState(DAO_ID as string);
+  io.emit("proposals", dao.proposals);
+}
+
+router.get("/state", async (req, res) => {
   try {
-    const dao = await getDaoState(DAO_ID);
+    const dao = await getDaoState(DAO_ID as string);
     res.json(dao);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/proposal', async (req, res) => {
+router.post("/proposal", async (req, res) => {
   const { title, description } = req.body;
   if (!title || !description) {
-    return res.status(400).json({ error: 'Missing title or description' });
+    return res.status(400).json({ error: "Missing title or description" });
   }
 
   try {
-    const digest = await createProposal(DAO_ID, title, description);
+    const digest = await createProposal(DAO_ID as string, title, description);
     res.json({ digest });
+
+    const io = req.app.get('io') as import('socket.io').Server;
+    await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/vote', async (req, res) => {
+router.post("/vote", async (req, res) => {
   const { proposalId, voteCode, sentiment, confidence } = req.body;
-
-  // Sprawdzenie danych wejściowych
+  
   if (
     typeof proposalId !== 'number' ||
     ![0, 1, 2].includes(voteCode) ||
@@ -42,8 +54,11 @@ router.post('/vote', async (req, res) => {
   }
 
   try {
-    await startVoting(DAO_ID, proposalId, voteCode, sentiment, confidence);
-    res.json({ success: true });
+    const digest = await startVoting(DAO_ID as string, proposalId, voteCode, sentiment, confidence);
+    res.json({ digest });
+
+    const io = req.app.get('io') as import('socket.io').Server;
+    await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
