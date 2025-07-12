@@ -27,13 +27,15 @@ module 0x0::dao {
     }
 
     /// PUBLIC: Tworzy DAO i przekazuje go wywołującemu (brak `entry`)
-    public fun create_dao(ctx: &mut TxContext): DAO {
-        DAO {
-            id: object::new(ctx),
-            proposals: vector::empty<Proposal>(),
-            next_id: 0,
-        }
-    }
+public entry fun create_dao(ctx: &mut TxContext) {
+    let dao = DAO {
+        id: object::new(ctx),
+        proposals: vector::empty<Proposal>(),
+        next_id: 0,
+    };
+    let sender = tx_context::sender(ctx);
+    transfer::public_transfer(dao, sender);
+}
 
     /// ENTRY: Tworzy nową propozycję
     public entry fun create_proposal(
@@ -47,7 +49,7 @@ module 0x0::dao {
             title,
             description,
             proposer: tx_context::sender(ctx),
-            votes: vector::empty<Vote>(),
+            votes: vector::empty<Vote>()
         };
         vector::push_back(&mut dao.proposals, proposal);
         dao.next_id = dao.next_id + 1;
@@ -63,7 +65,7 @@ module 0x0::dao {
         let sender = tx_context::sender(ctx);
         let vote = Vote {
             voter: sender,
-            in_favor,
+            in_favor
         };
 
         let len = vector::length(&dao.proposals);

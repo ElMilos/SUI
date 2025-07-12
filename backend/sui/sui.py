@@ -6,8 +6,8 @@ import time
 config = SuiConfig.default_config()
 client = SuiClient(config)
 
-PACKAGE_ID = "0x980e248e159776ea75509e39b60137e9977555d6bd7e6de46b0542a2582aae4a"        # ← podaj swoje ID paczki
-DAO_ID = "0xcbd047f8c28af85d61ba984ff6919563d4a85b69983e9226e74ddc2ea504553"            # ← podaj swoje DAO object ID
+PACKAGE_ID = "0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5"        # ← podaj swoje ID paczki
+DAO_ID = "0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e"            # ← podaj swoje DAO object ID
 
 ### ---- DAO OPERATIONS ---- ###
 
