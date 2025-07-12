@@ -15,11 +15,11 @@ messages = []
 
 @client.event
 async def on_ready():
-channel = client.get_channel(CHANNEL_ID)
-async for message in channel.history(limit=50):
-messages.append(message.content)
-await client.close()
+    channel = client.get_channel(CHANNEL_ID)
+    async for message in channel.history(limit=50):
+        messages.append(message.content)
+        await client.close()
 
 def fetch_messages():
-asyncio.run(client.start(TOKEN))
-return messages
+    asyncio.run(client.start(TOKEN))
+    return messages
