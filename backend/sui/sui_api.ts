@@ -29,7 +29,7 @@ router.post("/proposal", async (req, res) => {
   }
 
   try {
-    const digest = await createProposal(DAO_ID as string, title, description);
+    const digest = await createProposal(title, description);
     res.json({ digest });
 
     const io = req.app.get('io') as import('socket.io').Server;
@@ -54,7 +54,7 @@ router.post("/vote", async (req, res) => {
   }
 
   try {
-    const digest = await startVoting(DAO_ID as string, proposalId, voteCode, sentiment, confidence);
+    const digest = await startVoting( proposalId, voteCode, sentiment, confidence);
     res.json({ digest });
 
     const io = req.app.get('io') as IOServer;
