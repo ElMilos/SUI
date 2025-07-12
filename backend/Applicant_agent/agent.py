@@ -1,76 +1,77 @@
 import os
-import discord
-import asyncio
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
+import json
+import uuid
+from datetime import datetime
+from sui import SuiClient, sync_execute
 
-load_dotenv()
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID"))
+# Inicjalizacja klienta Sui
+SUI_ENDPOINT = os.getenv("SUI_ENDPOINT", "https://fullnode.testnet.sui.io:443")
+SUI_PACKAGE_ID = os.getenv("SUI_PACKAGE_ID")  # ID Twojego pakietu Move
+SUI_MODULE = os.getenv("SUI_MODULE", "governance")
+SUI_ADDRESS = os.getenv("SUI_ADDRESS")        # Adres Twojego portfela
 
-intents = discord.Intents.default()
-intents.messages = True
-intents.message_content = True
-client = discord.Client(intents=intents)
+client = SuiClient(SUI_ENDPOINT)
 
-# Aktywne inicjatywy
-active_proposals = {}  # {proposal_id: {author_id, start_time, text, messages}}
+# Utwórz propozycję on-chain
 
-@client.event
-async def on_ready():
-    print(f"🔗 Zalogowano jako {client.user}")
+def create_proposal_on_sui(text, total_voters):
+    response = client.move_call(
+        signer=SUI_ADDRESS,
+        package_object=SUI_PACKAGE_ID,
+        module=SUI_MODULE,
+        function="create_proposal",
+        args=[text, total_voters],
+        gas_budget=5000000
+    )
+    return response.object_changes[0]['objectId'] if response.object_changes else None
 
-@client.event
-async def on_message(message):
-    if message.author.bot:
-        return
+# Oddaj głos (yes/no) on-chain
 
-    # 🔹 Nowa propozycja
-    if message.content.startswith("!proposal"):
-        proposal_id = message.id
-        active_proposals[proposal_id] = {
-            "author_id": message.author.id,
-            "text": message.content,
-            "start_time": datetime.utcnow(),
-            "messages": [],
-            "channel_id": message.channel.id
-        }
-        await message.channel.send(f"🗳️ Inicjatywa zapisana! ID: `{proposal_id}` — oczekiwanie na dyskusję i głosowanie.")
-        return
+def vote_on_sui(proposal_id, vote_type):
+    choice = True if vote_type == "yes" else False
+    client.move_call(
+        signer=SUI_ADDRESS,
+        package_object=SUI_PACKAGE_ID,
+        module=SUI_MODULE,
+        function="vote",
+        args=[proposal_id, choice],
+        gas_budget=3000000
+    )
 
-    # 🔹 Głosowanie ręczne (autor pisze `!vote`)
-    for pid, proposal in active_proposals.items():
-        if message.author.id == proposal["author_id"] and message.content.lower().strip() == "!vote":
-            await start_voting(pid)
-            break
+# Pobierz dane propozycji
 
-# 🔸 Funkcja głosowania (symulacja)
-async def start_voting(proposal_id):
-    proposal = active_proposals.get(proposal_id)
+def get_proposal_data(proposal_id):
+    response = client.get_object(proposal_id)
+    return response.fields if response else None
+
+# Zakończ propozycję jeśli spełniono kworum
+
+def close_proposal_if_quorum(proposal_id):
+    proposal = get_proposal_data(proposal_id)
     if not proposal:
         return
 
-    channel = client.get_channel(proposal["channel_id"])
-    text = proposal["text"]
-    await channel.send(f"🗳️ Głosowanie rozpoczęte dla inicjatywy:\n```{text}```\nOdpowiedz ✅ (za) lub ❌ (przeciw) w ciągu 60 sekund.")
+    yes = int(proposal['yes_votes'])
+    no = int(proposal['no_votes'])
+    total = int(proposal['total_voters'])
+    voted = yes + no
 
-    # Dodaj reakcje do głosowania
-    proposal_message = await channel.fetch_message(proposal_id)
-    await proposal_message.add_reaction("✅")
-    await proposal_message.add_reaction("❌")
+    if voted / total >= 0.5:
+        client.move_call(
+            signer=SUI_ADDRESS,
+            package_object=SUI_PACKAGE_ID,
+            module=SUI_MODULE,
+            function="close_proposal",
+            args=[proposal_id],
+            gas_budget=3000000
+        )
 
-    # Czekamy 60 sekund na głosy
-    await asyncio.sleep(60)
-
-    # Pobierz ponownie wiadomość
-    updated = await channel.fetch_message(proposal_id)
-    votes_yes = 0
-    votes_no = 0
-    for reaction in updated.reactions:
-        if str(reaction.emoji) == "✅":
-            votes_yes = reaction.count - 1  # bez bota
-        elif str(reaction.emoji) == "❌":
-            votes_no = reaction.count - 1
-
-    await channel.send(f"📊 Wyniki głosowania:\n✅ ZA: {votes_yes}\n❌ PRZECIW: {votes_no}")
-    del active_proposals[proposal_id]
+# Dla testów lokalnych
+if __name__ == "__main__":
+    pid = create_proposal_on_sui("Czy zwiększyć budżet DAO?", 10)
+    print(f"Proposal ID: {pid}")
+    vote_on_sui(pid, "yes")
+    vote_on_sui(pid, "no")
+    data = get_proposal_data(pid)
+    print(f"Dane propozycji: {data}")
+    close_proposal_if_quorum(pid)

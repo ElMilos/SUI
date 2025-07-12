@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 def vote_on_proposal(proposal_id, vote="yes"):
     cmd = [
