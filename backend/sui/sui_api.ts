@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDaoState, createProposal, voteOnProposal, DAO_ID } from './sui_client';
+import { getDaoState, createProposal, startVoting, DAO_ID } from './sui_client';
 
 const router = express.Router();
 
@@ -27,14 +27,23 @@ router.post('/proposal', async (req, res) => {
 });
 
 router.post('/vote', async (req, res) => {
-  const { proposalId, inFavor } = req.body;
-  if (proposalId === undefined || typeof inFavor !== 'boolean') {
-    return res.status(400).json({ error: 'Missing or invalid vote parameters' });
+  const { proposalId, voteCode, sentiment, confidence } = req.body;
+
+  // Sprawdzenie danych wejściowych
+  if (
+    typeof proposalId !== 'number' ||
+    ![0, 1, 2].includes(voteCode) ||
+    typeof sentiment !== 'number' ||
+    typeof confidence !== 'number'
+  ) {
+    return res.status(400).json({
+      error: 'Missing or invalid vote parameters. Required: proposalId (number), voteCode (0|1|2), sentiment (number), confidence (number)',
+    });
   }
 
   try {
-    const digest = await voteOnProposal(DAO_ID, proposalId, inFavor);
-    res.json({ digest });
+    await startVoting(DAO_ID, proposalId, voteCode, sentiment, confidence);
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
