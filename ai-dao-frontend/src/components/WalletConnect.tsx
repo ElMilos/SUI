@@ -1,11 +1,16 @@
-import React from "react";
-import { WalletProvider, ConnectButton } from "@mysten/dapp-kit";
+import React from 'react';
+import { WalletProvider, SuiClientProvider, ConnectButton } from '@mysten/dapp-kit';
+import '@mysten/dapp-kit/dist/index.css';
 
 export const WalletProviderWrapper: React.FC<{ children: React.ReactNode }> = ({
   children,
-}) => <WalletProvider>{children}</WalletProvider>;
-
-import "@mysten/dapp-kit/dist/index.css";
+}) => (
+  <WalletProvider>
+    <SuiClientProvider>
+      {children}
+    </SuiClientProvider>
+  </WalletProvider>
+);
 
 const WalletConnect: React.FC = () => {
   return (

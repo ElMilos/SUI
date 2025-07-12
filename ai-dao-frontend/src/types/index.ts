@@ -40,18 +40,13 @@ export interface AddViewModalProps {
 export type { Range };
 
 export interface Proposal {
-  sentiment: number;
-  date: string | number | Date;
   id: string;
+  date: string | number | Date;
   title: string;
-  summary: string;
   aiDecision: 'yes' | 'no' | 'abstain';
   sentimentScore: number;
-  reason: string;
   confidence: number;
-  quotes?: string[];
   voted: boolean;
-  explorerUrl: string;
 }
 
 export interface DecisionFlowProps {
