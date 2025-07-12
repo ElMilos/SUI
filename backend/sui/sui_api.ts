@@ -3,7 +3,7 @@ import { getDaoState, createProposal, startVoting } from './sui_client';
 import { Server as IOServer } from 'socket.io';
 
 const router = express.Router();
-const DAO_ID = process.env.DAO_ID;
+const DAO_ID = process.env.SUI_DAO_ID;
 if (!DAO_ID) {
   throw new Error('Brakuje zmiennej środowiskowej DAO_ID w pliku .env');
 }

@@ -6,12 +6,13 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN!;
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN !;
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID!;
-const DAO_ID = process.env.DAO_ID!;
+const DAO_ID = process.env.SUI_DAO_ID!;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY!;
 
-const secretKey = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKeyBuffer = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKey = new Uint8Array(secretKeyBuffer);
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' });
 const sender = keypair.getPublicKey().toSuiAddress();
