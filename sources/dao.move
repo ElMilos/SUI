@@ -3,7 +3,7 @@ module 0x0::dao {
     use sui::clock::{Clock, timestamp_ms};
 
 
-       /// Status propozycji: dyskusja (Open), głosowanie (Voting), zatwierdzona (Approved), odrzucona (Rejected)
+    /// Status propozycji: dyskusja (Open), głosowanie (Voting), zatwierdzona (Approved), odrzucona (Rejected)
     public enum ProposalStatus has store, drop, copy {
         Open,
         Voting,
@@ -11,10 +11,10 @@ module 0x0::dao {
         Rejected,
     }
 
-    /// Głos: kto, jak, kiedy i na jakiej podstawie głosował
+    /// Głos: kto, kod głosu (0=Against, 1=Neutral, 2=InFavor), kiedy i na jakiej podstawie głosował
     public struct Vote has copy, drop, store {
         voter: address,
-        in_favor: bool,
+        vote_code: u16,
         timestamp: u64,
         sentiment_tag: string::String,
     }
@@ -114,25 +114,27 @@ module 0x0::dao {
                 assert!(prop_ref.proposer == tx_context::sender(ctx), 1);
                 assert!(prop_ref.status == ProposalStatus::Open, 2);
                 prop_ref.status = ProposalStatus::Voting;
-                return;
+                return
             };
             i = i + 1;
         };
     }
 
     /// Głosowanie – dostępne tylko w stanie Voting
+    /// vote_code: 0 => Against, 1 => Neutral, 2 => InFavor
     public entry fun vote(
         dao: &mut DAO,
         proposal_id: u64,
-        in_favor: bool,
+        vote_code: u16,
         sentiment_tag: string::String,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        assert!(vote_code <= 2, 100);
         let timestamp = timestamp_ms(clock);
         let vote = Vote {
             voter: tx_context::sender(ctx),
-            in_favor,
+            vote_code,
             timestamp,
             sentiment_tag,
         };
@@ -143,7 +145,7 @@ module 0x0::dao {
             if (prop_ref.id == proposal_id) {
                 assert!(prop_ref.status == ProposalStatus::Voting, 3);
                 vector::push_back(&mut prop_ref.votes, vote);
-                return;
+                return
             };
             i = i + 1;
         };
@@ -163,7 +165,7 @@ module 0x0::dao {
                 assert!(prop_ref.status == ProposalStatus::Voting, 4);
                 assert!(prop_ref.proposer == tx_context::sender(ctx), 5);
                 prop_ref.status = ProposalStatus::Approved;
-                return;
+                return
             };
             i = i + 1;
         };
@@ -183,7 +185,7 @@ module 0x0::dao {
                 assert!(prop_ref.status == ProposalStatus::Voting, 6);
                 assert!(prop_ref.proposer == tx_context::sender(ctx), 7);
                 prop_ref.status = ProposalStatus::Rejected;
-                return;
+                return
             };
             i = i + 1;
         };
@@ -208,7 +210,7 @@ module 0x0::dao {
             if (prop_ref.id == proposal_id) {
                 assert!(prop_ref.status == ProposalStatus::Open, 8);
                 vector::push_back(&mut prop_ref.feedbacks, fb);
-                return;
+                return
             };
             i = i + 1;
         };
@@ -220,12 +222,13 @@ module 0x0::dao {
         let mut i = 0;
         while (i < len) {
             let p = vector::borrow(&dao.proposals, i);
-            if (p.id == id) { return option::some(*p); };
+            if (p.id == id) { return option::some(*p) };
             i = i + 1;
         };
         option::none()
     }
 
+    /// Pobierz wszystkie propozycje
     public fun list_proposals(dao: &DAO): vector<Proposal> {
         dao.proposals
     }
