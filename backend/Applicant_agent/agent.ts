@@ -63,7 +63,7 @@ discordClient.on('messageCreate', async (message) => {
     const description = descParts.join('|').trim();
 
     try {
-      const txDigest = await createProposal(title.trim(), description);
+      const txDigest = await createProposalByDiscord(title.trim(), description);
       message.reply(`Propozycja utworzona pomyślnie! Tx digest: ${txDigest}`);
     } catch (err) {
       console.error('Błąd przy tworzeniu propozycji:', err);
