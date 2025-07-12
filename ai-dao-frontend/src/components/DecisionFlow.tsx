@@ -71,7 +71,7 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
   const labelText = (key: PortKey) => key.charAt(0).toUpperCase() + key.slice(1);
 
   const labelColor = darkMode ? 'text-gray-200' : 'text-gray-700';
-  const subTextColor = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const subTextColor = darkMode ? 'text-gray-400 text-xs' : 'text-gray-500 text-xs';
 
   const thresholdBg = darkMode ? 'bg-gray-700' : 'bg-gray-300';
   const thresholdFill = darkMode ? 'bg-indigo-500' : 'bg-indigo-600';
@@ -82,26 +82,29 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
         <h3 className="text-lg font-semibold">DECISION FLOW</h3>
       </div>
 
-      <div className="flex">
-        <div className="w-24 flex flex-col items-center">
+      <div className="flex flex-col md:flex-row md:space-x-6">
+        {/* Processed count */}
+        <div className="w-full md:w-24 flex flex-col items-center mb-4 md:mb-0">
           <div className={boxClass}>
             <span className="block text-xs">PROCESSED</span>
             <span className="block text-xl font-bold">{processed}</span>
           </div>
         </div>
 
+        {/* Flow chart */}
         <div className="flex-1">
-          <svg viewBox="0 0 500 200" className="w-full h-48">
+          <svg viewBox="0 0 500 200" className="w-full h-32 md:h-48">
             {paths}
           </svg>
         </div>
 
-        <div className="pt-2 w-36 space-y-6">
+        {/* Legend & toggles */}
+        <div className="w-full md:w-36 mt-4 md:mt-0 space-y-6">
           {(['yes', 'no', 'abstain'] as PortKey[]).map((key) => (
             <div key={key} className="flex items-center justify-between">
               <div className="text-sm">
                 <div className={labelColor}>{labelText(key)}</div>
-                <div className={`${subTextColor} text-xs`}>{counts[key]} votes</div>
+                <div className={subTextColor}>{counts[key]} votes</div>
               </div>
               <Switch
                 checked={enabledPorts[key]}
@@ -123,7 +126,7 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
           <span>Sentiment Threshold</span>
           <span>{threshold}%</span>
         </div>
-        <div className={`w-full ${thresholdBg} rounded-full h-2`}>
+        <div className={`w-full ${thresholdBg} rounded-full h-2`}>          
           <div className={`h-2 rounded-full ${thresholdFill}`} style={{ width: `${threshold}%` }} />
         </div>
       </div>

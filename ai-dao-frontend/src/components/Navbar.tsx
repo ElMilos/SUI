@@ -1,8 +1,12 @@
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, Menu } from 'lucide-react';
 import WalletConnect from './WalletConnect';
 import { useTheme } from '../contexts/ThemeContext';
 
-export default function Navbar() {
+interface NavbarProps {
+  onMenuClick: () => void;
+}
+
+export default function Navbar({ onMenuClick }: NavbarProps) {
   const { darkMode, toggle } = useTheme();
 
   return (
@@ -12,10 +16,20 @@ export default function Navbar() {
       }`}
     >
       <div className="flex items-center space-x-4">
-        {/* Logo or nav items here */}
+        {/* Mobile menu button */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 rounded-md bg-gray-800 dark:hover:bg-gray-800 transition-colors duration-200"
+        >
+          <Menu className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
+        </button>
+        {/* Logo or nav items here (show in desktop) */}
+        <div className="hidden md:flex items-center space-x-4">
+          {/* Put logo/text here */}
+        </div>
       </div>
 
-      <div className="flex items-center space-x-6">
+      <div className="flex items-center space-x-4">
         <button
           className={`relative p-2 rounded-full transition-colors duration-200 ${
             darkMode

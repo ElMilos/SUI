@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const PACKAGE_ID = '0x693c15d34aea1d8d1791ba253bfb51b371f38a098b6f8459b2a5e5dc9bd0f459';
-const DAO_ID = '0x266788581219b77cbfc80bb96e130de8d26f1ddc4701a086395fc94db6df5478';
+export const DAO_ID = '0x266788581219b77cbfc80bb96e130de8d26f1ddc4701a086395fc94db6df5478';
 const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
 
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;

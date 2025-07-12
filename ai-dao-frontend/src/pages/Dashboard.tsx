@@ -1,6 +1,8 @@
+// src/components/Dashboard.tsx
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { fetchProposals } from "../services/api";
 import type { Proposal } from "../types";
+import { io, Socket } from "socket.io-client";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import DecisionFlow from "../components/DecisionFlow";
@@ -40,9 +42,40 @@ export const Dashboard: React.FC = () => {
   const filterRef = useRef<HTMLDivElement>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
 
-  // fetch data
+  // socket ref
+  const socketRef = useRef<Socket | null>(null);
+
+  // 1) jednorazowy HTTP fetch
   useEffect(() => {
     fetchProposals().then(setProposals).catch(console.error);
+  }, []);
+
+  // 2) połączenie WebSocket
+useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+    const SOCKET_URL = API_BASE.replace(/^http/, "ws");
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+    });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("🔌 WS connected", socket.id);
+    });
+
+    socket.on("proposals", (newProposals: Proposal[]) => {
+      setProposals(newProposals);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("🔌 WS disconnected:", reason);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   // date picker handlers
@@ -66,21 +99,21 @@ export const Dashboard: React.FC = () => {
     setIsDatePickerOpen(false);
   };
 
-  // close on outside click...
+  // outside-click hooks (filter & date)
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
         setIsFilterOpen(false);
       }
     };
     if (isFilterOpen) {
-      document.addEventListener("mousedown", handleClick);
-      return () => document.removeEventListener("mousedown", handleClick);
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
     }
   }, [isFilterOpen]);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (
         datePickerRef.current &&
         !datePickerRef.current.contains(e.target as Node)
@@ -89,12 +122,12 @@ export const Dashboard: React.FC = () => {
       }
     };
     if (isDatePickerOpen) {
-      document.addEventListener("mousedown", handleClick);
-      return () => document.removeEventListener("mousedown", handleClick);
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
     }
   }, [isDatePickerOpen]);
 
-  // filtering logic
+  // filtrowanie
   const filtered = useMemo(() => {
     return proposals
       .filter((p) => {
@@ -112,7 +145,7 @@ export const Dashboard: React.FC = () => {
       });
   }, [proposals, appliedRange, filters]);
 
-  // metrics
+  // metryki
   const total = filtered.length;
   const yesCount = filtered.filter((p) => p.aiDecision === "yes").length;
   const noCount = filtered.filter((p) => p.aiDecision === "no").length;
@@ -132,7 +165,6 @@ export const Dashboard: React.FC = () => {
     { category: "No", count: noCount },
     { category: "Abstain", count: abstainCount },
   ];
-
   const proposalTrend = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach((p) => {
@@ -197,18 +229,21 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
       {proposals.length > 0 && <LastProposalCard proposal={proposals[0]} />}
-      <div className="flex space-x-6">
-        <div className="w-4/6">
+
+      <div className="flex flex-col space-y-6 md:flex-row md:space-y-0 md:space-x-6">
+        <div className="w-full md:w-4/6">
           <DecisionFlow
             proposals={filtered}
             threshold={Math.round(avgSentiment)}
           />
         </div>
-        <div className="w-2/6">
+        <div className="w-full md:w-2/6">
           <SideChart voteDistribution={voteDistribution} />
         </div>
       </div>
+
       <MetricsSection
         total={total}
         avgSentiment={avgSentiment}
