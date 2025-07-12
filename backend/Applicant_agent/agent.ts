@@ -19,7 +19,7 @@ const discordClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIn
 import * as Sui from '../sui/sui_client';
 
 
-async function createProposal(title: string, description: string) {
+async function createProposalByDiscord(title: string, description: string) {
   const tx = new Transaction();
     tx.setSender(sender);
   tx.moveCall({
@@ -63,7 +63,7 @@ discordClient.on('messageCreate', async (message) => {
     const description = descParts.join('|').trim();
 
     try {
-      const txDigest = await createProposal(title.trim(), description);
+      const txDigest = await createProposalByDiscord(title.trim(), description);
       message.reply(`Propozycja utworzona pomyślnie! Tx digest: ${txDigest}`);
     } catch (err) {
       console.error('Błąd przy tworzeniu propozycji:', err);

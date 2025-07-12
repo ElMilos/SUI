@@ -3,9 +3,9 @@ import { getDaoState, createProposal, startVoting } from './sui_client';
 import { Server as IOServer } from 'socket.io';
 
 const router = express.Router();
-const DAO_ID = process.env.SUI_DAO_ID;
+const DAO_ID = process.env.DAO_ID;
 if (!DAO_ID) {
-  throw new Error('Brakuje zmiennej środowiskowej SUI_DAO_ID w pliku .env');
+  throw new Error('Brakuje zmiennej środowiskowej DAO_ID w pliku .env');
 }
 
 async function broadcastProposals(io: import('socket.io').Server) {
@@ -23,7 +23,7 @@ router.get("/state", async (req, res) => {
 });
 
 router.post("/proposal", async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, summary } = req.body;
   if (!title || !description) {
     return res.status(400).json({ error: "Missing title or description" });
   }
@@ -54,7 +54,8 @@ router.post("/vote", async (req, res) => {
   }
 
   try {
-    const digest = await startVoting( proposalId, voteCode, sentiment, confidence);
+
+    const digest = await startVoting(proposalId, voteCode, sentiment, confidence);
     res.json({ digest });
 
     const io = req.app.get('io') as IOServer;

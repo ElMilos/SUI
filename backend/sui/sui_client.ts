@@ -6,7 +6,7 @@ dotenv.config();
 
 // Wczytywanie zmiennych środowiskowych
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
-const DAO_ID = process.env.SUI_DAO_ID;
+const DAO_ID = process.env.DAO_ID;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 
 // Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
@@ -18,7 +18,7 @@ if (!PACKAGE_ID) {
   throw new Error('Brakuje zmiennej środowiskowej SUI_PACKAGE_ID w pliku .env');
 }
 if (!DAO_ID) {
-  throw new Error('Brakuje zmiennej środowiskowej SUI_DAO_ID w pliku .env');
+  throw new Error('Brakuje zmiennej środowiskowej DAO_ID w pliku .env');
 }
 if (!PRIVATE_KEY_BASE64) {
   throw new Error('Brakuje zmiennej środowiskowej SUI_PRIVATE_KEY w pliku .env');

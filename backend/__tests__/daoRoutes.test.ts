@@ -3,7 +3,7 @@ import request from 'supertest';
 import express, { Application } from 'express';
 
 // Ensure the DAO_ID env var is set before importing the router
-process.env.SUI_DAO_ID = 'test_dao';
+process.env.DAO_ID = 'test_dao';
 
 // Mock the SUI client functions
 jest.mock('../sui/sui_client', () => ({
