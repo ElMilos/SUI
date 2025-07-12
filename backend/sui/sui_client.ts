@@ -5,9 +5,9 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const PACKAGE_ID = '0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5';
-const DAO_ID = '0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e';
-const FULLNODE_URL = 'http://127.0.0.1:9000';
+const PACKAGE_ID = '0x693c15d34aea1d8d1791ba253bfb51b371f38a098b6f8459b2a5e5dc9bd0f459';
+const DAO_ID = '0x266788581219b77cbfc80bb96e130de8d26f1ddc4701a086395fc94db6df5478';
+const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
 
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 if (!PRIVATE_KEY_BASE64) {
@@ -31,7 +31,7 @@ interface DaoObject {
   proposals: DaoProposal[];
 }
 
-async function getDaoState(daoId: string): Promise<DaoObject> {
+export async function getDaoState(daoId: string): Promise<DaoObject> {
   const object: SuiObjectResponse = await client.getObject({
     id: daoId,
     options: { showContent: true },
@@ -79,7 +79,7 @@ async function getDaoState(daoId: string): Promise<DaoObject> {
   return fields;
 }
 
-async function createProposal(daoId: string, title: string, description: string): Promise<void> {
+ export async function createProposal(daoId: string, title: string, description: string): Promise<void> {
   const tx = new Transaction();
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
@@ -104,7 +104,7 @@ async function createProposal(daoId: string, title: string, description: string)
   console.log('✅ Proposal created:', result.digest);
 }
 
-async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolean): Promise<void> {
+export async function voteOnProposal(daoId: string, proposalId: number, inFavor: boolean): Promise<void> {
   const tx = new Transaction();
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
@@ -132,7 +132,7 @@ function mockSentimentAnalysis(): boolean {
   return Math.random() > 0.5;
 }
 
-async function agentDecisionLoop(): Promise<void> {
+export async function agentDecisionLoop(): Promise<void> {
   try {
     const dao = await getDaoState(DAO_ID);
     const proposals = dao.proposals;
