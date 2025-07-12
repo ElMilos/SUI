@@ -1,80 +1,75 @@
-import { SuiClient, getFullnodeUrl, SuiTransactionBlock } from '@mysten/sui.js/client';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { Ed25519Keypair, JsonRpcProvider, RawSigner, TransactionBlock } from '@mysten/sui.js';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-// Konfiguracja klienta
-const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+const PACKAGE_ID = '0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5';
+const DAO_ID = '0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e';
+const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
 
-// Ustawienia: PACKAGE i DAO
-const PACKAGE_ID = "0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5";
-const DAO_ID = "0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e";
+// 🔐 Wczytaj klucz prywatny z ENV
+const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY; // musi być base64-encoded
 
-// Pobierz stan DAO
-async function getDaoState(daoId) {
-  const response = await client.getObject({
-    id: daoId,
-    options: { showContent: true }
-  });
-
-  const daoContent = response.data.content.fields;
-  console.log("DAO:", daoContent);
-  return daoContent;
+if (!PRIVATE_KEY_BASE64) {
+  throw new Error('Brak klucza prywatnego (SUI_PRIVATE_KEY) w .env');
 }
 
-// Utwórz propozycję
-async function createProposal(signer, daoId, title, description) {
+const keypair = Ed25519Keypair.fromSecretKey(Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1));
+const provider = new JsonRpcProvider(FULLNODE_URL);
+const signer = new RawSigner(keypair, provider);
+
+async function getDaoState(daoId) {
+  const object = await provider.getObject({
+    id: daoId,
+    options: { showContent: true },
+  });
+
+  console.log('DAO:', object.data.content.fields);
+  return object.data.content.fields;
+}
+
+async function createProposal(daoId, title, description) {
   const tx = new TransactionBlock();
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
       tx.pure(daoId),
       tx.pure(title),
-      tx.pure(description)
-    ]
+      tx.pure(description),
+    ],
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
-    signer,
-    transactionBlock: tx,
-    options: { showEffects: true },
-  });
-
-  console.log("✅ Proposal created:", result);
+  const result = await signer.signAndExecuteTransactionBlock({ transactionBlock: tx });
+  console.log('✅ Proposal created:', result.digest);
 }
 
-// Głosuj na propozycję
-async function voteOnProposal(signer, daoId, proposalId, inFavor) {
+async function voteOnProposal(daoId, proposalId, inFavor) {
   const tx = new TransactionBlock();
+
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
     arguments: [
       tx.pure(daoId),
       tx.pure(proposalId),
-      tx.pure(inFavor)
-    ]
+      tx.pure(inFavor),
+    ],
   });
 
-  const result = await client.signAndExecuteTransactionBlock({
-    signer,
-    transactionBlock: tx,
-    options: { showEffects: true },
-  });
-
-  console.log("✅ Voted:", result);
+  const result = await signer.signAndExecuteTransactionBlock({ transactionBlock: tx });
+  console.log('✅ Voted:', result.digest);
 }
 
-// Symulowana analiza sentymentu
+// Prosty mock analizy sentymentu
 function mockSentimentAnalysis() {
-  return true; // np. pozytywny sentyment
+  return true; // np. analiza NLP wykazała >60% pozytywnego sentymentu
 }
 
-// Główna logika agenta
-async function agentDecisionLoop(signer) {
+async function agentDecisionLoop() {
   const dao = await getDaoState(DAO_ID);
   const proposals = dao.proposals || [];
 
-  if (proposals.length === 0) {
-    console.log("Brak propozycji.");
+  if (!proposals.length) {
+    console.log('Brak propozycji.');
     return;
   }
 
@@ -83,16 +78,11 @@ async function agentDecisionLoop(signer) {
 
   if (mockSentimentAnalysis()) {
     console.log(`Głosuję ZA propozycją ${proposalId}`);
-    await voteOnProposal(signer, DAO_ID, proposalId, true);
+    await voteOnProposal(DAO_ID, proposalId, true);
   } else {
     console.log(`Głosuję PRZECIW propozycji ${proposalId}`);
-    await voteOnProposal(signer, DAO_ID, proposalId, false);
+    await voteOnProposal(DAO_ID, proposalId, false);
   }
 }
 
-// Główne wejście
-(async () => {
-  // Upewnij się, że masz poprawnie załadowany klucz prywatny!
-  const keypair = Ed25519Keypair.generate(); // lub załaduj z mnemonika
-  await agentDecisionLoop(keypair);
-})();
+agentDecisionLoop().catch(console.error);
