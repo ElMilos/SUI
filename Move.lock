@@ -32,3 +32,9 @@ chain-id = "29c7faaa"
 original-published-id = "0xc7fa1ae9f3eb53d0a77ab1609e99b916e6d6d990cba7c2a7046fb14f067dc8fd"
 latest-published-id = "0xc7fa1ae9f3eb53d0a77ab1609e99b916e6d6d990cba7c2a7046fb14f067dc8fd"
 published-version = "1"
+
+[env.devote]
+chain-id = "29c7faaa"
+original-published-id = "0x23d549962634e1d71ff3ce541a758d62dd02c5ddcfcf6d0b84a7c2345a262cf6"
+latest-published-id = "0x23d549962634e1d71ff3ce541a758d62dd02c5ddcfcf6d0b84a7c2345a262cf6"
+published-version = "1"
