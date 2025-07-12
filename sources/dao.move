@@ -1,7 +1,8 @@
 module 0x0::dao {
     use std::string;
-    use sui::clock::{Clock, timestamp_ms};
-
+    use sui::tx_context::{Self, TxContext};
+    use sui::object::{Self, UID};
+    use sui::transfer;
 
     /// Status propozycji: dyskusja (Open), głosowanie (Voting), zatwierdzona (Approved), odrzucona (Rejected)
     public enum ProposalStatus has store, drop, copy {
@@ -11,41 +12,34 @@ module 0x0::dao {
         Rejected,
     }
 
-    /// Głos: kto, kod głosu (0=Against, 1=Neutral, 2=InFavor), kiedy i na jakiej podstawie głosował
+    /// Głos: kto, kod głosu (0=yes, 1=no, 2=abstain), kiedy, sentyment oraz zaufanie
     public struct Vote has copy, drop, store {
         voter: address,
-        vote_code: u16,
+        vote_code: u8,
         timestamp: u64,
-        sentiment_tag: string::String,
+        sentiment: u64,
+        confidence: u64,
     }
 
-    /// Feedback od społeczności (komentarze) – dostępne tylko podczas otwartej dyskusji
+    /// Feedback od społeczności (komentarze)
     public struct Feedback has copy, drop, store {
         proposal_id: u64,
         user: address,
         reaction: string::String,
     }
 
-    /// Propozycja DAO z rozszerzonymi metadanymi
+    /// Propozycja DAO
     public struct Proposal has store, drop, copy {
         id: u64,
-        title: string::String,
-        summary: string::String,
-        explorer_url: string::String,
-        ai_decision: bool,
-        reason: string::String,
-        sentiment: u64,
-        confidence: u64,
-        voted: bool,
-        quotes: vector<string::String>,
         date: u64,
+        title: string::String,
         proposer: address,
         votes: vector<Vote>,
-        feedbacks: vector<Feedback>,
         status: ProposalStatus,
+        feedbacks: vector<Feedback>,
     }
 
-    /// DAO jako główny obiekt
+    /// Główny obiekt DAO
     public struct DAO has key, store {
         id: UID,
         proposals: vector<Proposal>,
@@ -63,44 +57,28 @@ module 0x0::dao {
         transfer::public_transfer(dao, sender);
     }
 
-    /// Tworzy propozycję – start dyskusji (Open)
+    /// Tworzy propozycję (tytuł + data)
     public entry fun create_proposal(
         dao: &mut DAO,
         title: string::String,
-        summary: string::String,
-        explorer_url: string::String,
-        ai_decision: bool,
-        reason: string::String,
-        sentiment: u64,
-        confidence: u64,
-        voted: bool,
-        quotes: vector<string::String>,
         date: u64,
         ctx: &mut TxContext
     ) {
         let id = dao.next_id;
         let proposal = Proposal {
             id,
-            title,
-            summary,
-            explorer_url,
-            ai_decision,
-            reason,
-            sentiment,
-            confidence,
-            voted,
-            quotes,
             date,
+            title,
             proposer: tx_context::sender(ctx),
             votes: vector::empty<Vote>(),
-            feedbacks: vector::empty<Feedback>(),
             status: ProposalStatus::Open,
+            feedbacks: vector::empty<Feedback>(),
         };
         vector::push_back(&mut dao.proposals, proposal);
         dao.next_id = id + 1;
     }
 
-    /// Przejście z dyskusji do głosowania – tylko autor może uruchomić
+    /// Rozpoczyna fazę głosowania (tylko autor)
     public entry fun start_voting(
         dao: &mut DAO,
         proposal_id: u64,
@@ -109,49 +87,50 @@ module 0x0::dao {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
-            if (prop_ref.id == proposal_id) {
-                assert!(prop_ref.proposer == tx_context::sender(ctx), 1);
-                assert!(prop_ref.status == ProposalStatus::Open, 2);
-                prop_ref.status = ProposalStatus::Voting;
-                return
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                assert!(prop.proposer == tx_context::sender(ctx), 1);
+                assert!(prop.status == ProposalStatus::Open, 2);
+                prop.status = ProposalStatus::Voting;
+                return;
             };
             i = i + 1;
         };
     }
 
-    /// Głosowanie – dostępne tylko w stanie Voting
-    /// vote_code: 0 => Against, 1 => Neutral, 2 => InFavor
+    /// Składa głos (vote_code: 0=yes, 1=no, 2=abstain)
+    /// Parameter `timestamp` is provided directly as u64
     public entry fun vote(
         dao: &mut DAO,
         proposal_id: u64,
-        vote_code: u16,
-        sentiment_tag: string::String,
-        clock: &Clock,
+        vote_code: u8,
+        timestamp: u64,
+        sentiment: u64,
+        confidence: u64,
         ctx: &mut TxContext
     ) {
         assert!(vote_code <= 2, 100);
-        let timestamp = timestamp_ms(clock);
         let vote = Vote {
             voter: tx_context::sender(ctx),
             vote_code,
             timestamp,
-            sentiment_tag,
+            sentiment,
+            confidence,
         };
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
-            if (prop_ref.id == proposal_id) {
-                assert!(prop_ref.status == ProposalStatus::Voting, 3);
-                vector::push_back(&mut prop_ref.votes, vote);
-                return
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                assert!(prop.status == ProposalStatus::Voting, 3);
+                vector::push_back(&mut prop.votes, vote);
+                return;
             };
             i = i + 1;
         };
     }
 
-    /// Zatwierdzenie propozycji – tylko po głosowaniu i tylko autor
+    /// Zatwierdzanie propozycji (tylko autor)
     public entry fun approve_proposal(
         dao: &mut DAO,
         proposal_id: u64,
@@ -160,18 +139,18 @@ module 0x0::dao {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
-            if (prop_ref.id == proposal_id) {
-                assert!(prop_ref.status == ProposalStatus::Voting, 4);
-                assert!(prop_ref.proposer == tx_context::sender(ctx), 5);
-                prop_ref.status = ProposalStatus::Approved;
-                return
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                assert!(prop.status == ProposalStatus::Voting, 4);
+                assert!(prop.proposer == tx_context::sender(ctx), 5);
+                prop.status = ProposalStatus::Approved;
+                return;
             };
             i = i + 1;
         };
     }
 
-    /// Odrzucenie propozycji – tylko po głosowaniu i tylko autor
+    /// Odrzucanie propozycji (tylko autor)
     public entry fun reject_proposal(
         dao: &mut DAO,
         proposal_id: u64,
@@ -180,18 +159,18 @@ module 0x0::dao {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
-            if (prop_ref.id == proposal_id) {
-                assert!(prop_ref.status == ProposalStatus::Voting, 6);
-                assert!(prop_ref.proposer == tx_context::sender(ctx), 7);
-                prop_ref.status = ProposalStatus::Rejected;
-                return
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                assert!(prop.status == ProposalStatus::Voting, 6);
+                assert!(prop.proposer == tx_context::sender(ctx), 7);
+                prop.status = ProposalStatus::Rejected;
+                return;
             };
             i = i + 1;
         };
     }
 
-    /// Dodaj komentarz/feedback – tylko podczas dyskusji (Open)
+    /// Dodaje feedback (tylko w fazie dyskusji)
     public entry fun give_feedback(
         dao: &mut DAO,
         proposal_id: u64,
@@ -206,29 +185,29 @@ module 0x0::dao {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
-            let prop_ref = vector::borrow_mut(&mut dao.proposals, i);
-            if (prop_ref.id == proposal_id) {
-                assert!(prop_ref.status == ProposalStatus::Open, 8);
-                vector::push_back(&mut prop_ref.feedbacks, fb);
-                return
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                assert!(prop.status == ProposalStatus::Open, 8);
+                vector::push_back(&mut prop.feedbacks, fb);
+                return;
             };
             i = i + 1;
         };
     }
 
-    /// Gettery
+    /// Pobiera propozycję po ID
     public fun get_proposal(dao: &DAO, id: u64): Option<Proposal> {
         let len = vector::length(&dao.proposals);
         let mut i = 0;
         while (i < len) {
             let p = vector::borrow(&dao.proposals, i);
-            if (p.id == id) { return option::some(*p) };
+            if (p.id == id) { return option::some(*p); };
             i = i + 1;
         };
         option::none()
     }
 
-    /// Pobierz wszystkie propozycje
+    /// Pobiera wszystkie propozycje
     public fun list_proposals(dao: &DAO): vector<Proposal> {
         dao.proposals
     }
