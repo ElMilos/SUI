@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN !;
+const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID!;
 const DAO_ID = process.env.SUI_DAO_ID!;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY!;
