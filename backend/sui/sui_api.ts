@@ -1,6 +1,6 @@
 import express from 'express';
 import { getDaoState, createProposal, startVoting } from './sui_client';
-
+import { Server as IOServer } from 'socket.io';
 
 const router = express.Router();
 const DAO_ID = process.env.SUI_DAO_ID;
@@ -57,7 +57,8 @@ router.post("/vote", async (req, res) => {
     const digest = await startVoting(DAO_ID as string, proposalId, voteCode, sentiment, confidence);
     res.json({ digest });
 
-    const io = req.app.get('io') as import('socket.io').Server;
+    const io = req.app.get('io') as IOServer;
+    io.emit('new_vote', { proposalId, voteCode, sentiment, confidence });  // Wysyłanie powiadomienia do agentów
     await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

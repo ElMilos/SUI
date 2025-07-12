@@ -144,7 +144,7 @@ export async function startVoting(
 ): Promise<void> {
   const tx = new Transaction();
 
-  // 1. Rozpocznij głosowanie
+  // Rozpocznij głosowanie na DAO
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::start_voting`,
     arguments: [
@@ -153,7 +153,16 @@ export async function startVoting(
     ],
   });
 
-  // 2. Dodaj głos
+  // Rozsyłanie sygnału do innych agentów na całej sieci
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::notify_agents`,
+    arguments: [
+      tx.pure.address(daoId),
+      tx.pure.u64(proposalId),
+    ],
+  });
+
+  // Dodanie głosu
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
     arguments: [
@@ -178,6 +187,7 @@ export async function startVoting(
 
   console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
 }
+
 
 // 🆕 Zatwierdzenie propozycji
 export async function approveProposal(daoId: string, proposalId: number): Promise<void> {
