@@ -2,22 +2,23 @@ import express from "express";
 import {
   getDaoState,
   createProposal,
-  voteOnProposal,
-  DAO_ID,
+  voteOnProposal
 } from "./sui_client";
 
 const router = express.Router();
+const DAO_ID = process.env.SUI_DAO_ID;
+if (!DAO_ID) {
+  throw new Error('Brakuje zmiennej środowiskowej SUI_DAO_ID w pliku .env');
+}
 
-// Helper do broadcastu
 async function broadcastProposals(io: import('socket.io').Server) {
-  const dao = await getDaoState(DAO_ID);
-  // emitujemy event 'proposals' z payloadem listy propozycji
+  const dao = await getDaoState(DAO_ID as string);
   io.emit("proposals", dao.proposals);
 }
 
 router.get("/state", async (req, res) => {
   try {
-    const dao = await getDaoState(DAO_ID);
+    const dao = await getDaoState(DAO_ID as string);
     res.json(dao);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -31,10 +32,9 @@ router.post("/proposal", async (req, res) => {
   }
 
   try {
-    const digest = await createProposal(DAO_ID, title, description);
+    const digest = await createProposal(DAO_ID as string, title, description);
     res.json({ digest });
 
-    // po udanym utworzeniu – broadcast do WS
     const io = req.app.get('io') as import('socket.io').Server;
     await broadcastProposals(io);
   } catch (err: any) {
@@ -51,10 +51,9 @@ router.post("/vote", async (req, res) => {
   }
 
   try {
-    const digest = await voteOnProposal(DAO_ID, proposalId, inFavor);
+    const digest = await voteOnProposal(DAO_ID as string, proposalId, inFavor);
     res.json({ digest });
 
-    // po udanym głosowaniu – broadcast
     const io = req.app.get('io') as import('socket.io').Server;
     await broadcastProposals(io);
   } catch (err: any) {
