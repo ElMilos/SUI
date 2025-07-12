@@ -157,11 +157,11 @@ export async function startVoting(
     ],
   });
 
-    // Rozsyłanie sygnału do innych agentów na całej sieci
+  // Rozsyłanie sygnału do innych agentów na całej sieci
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::notify_agents`,
     arguments: [
-      tx.pure.address(daoId),
+      daoObject,
       tx.pure.u64(proposalId),
     ],
   });
