@@ -1,9 +1,8 @@
-import { Home, BarChart2, Settings, LifeBuoy } from "lucide-react";
+import { Home, Settings, LifeBuoy } from "lucide-react";
 import Logo from "../assets/logo.svg"
 
 const navItems = [
   { label: "Dashboard", icon: Home, href: "/" },
-  { label: "Statistics", icon: BarChart2, href: "/statistics" },
   { label: "Settings", icon: Settings, href: "/settings" },
   { label: "Support", icon: LifeBuoy, href: "/support" },
 ];
