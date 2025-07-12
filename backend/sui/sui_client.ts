@@ -5,9 +5,9 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const PACKAGE_ID = '0xa20d316d00073b9dcd732cdd74784b17b02646581a6287c2b68809279fda66a5';
-const DAO_ID = '0x762a068cbcb8dfb76fef3f1b4219a33ead3dfd294b25794e11d7aa0a6170b72e';
-const FULLNODE_URL = 'http://127.0.0.1:9000';
+const PACKAGE_ID = '0xc7fa1ae9f3eb53d0a77ab1609e99b916e6d6d990cba7c2a7046fb14f067dc8fd';
+const DAO_ID = '0x405796cac260bd4d68563fdefce608ac56a47f57c738a5f713d1466791c8ab84';
+const FULLNODE_URL = 'https://fullnode.devnet.sui.io';
 
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 if (!PRIVATE_KEY_BASE64) {
@@ -32,10 +32,17 @@ interface DaoObject {
 }
 
 async function getDaoState(daoId: string): Promise<DaoObject> {
-  const object: SuiObjectResponse = await client.getObject({
-    id: daoId,
-    options: { showContent: true },
-  });
+  console.log("👉 Wysyłam zapytanie o DAO:", daoId);
+  let object: SuiObjectResponse;
+  try {
+    object = await client.getObject({
+      id: daoId,
+      options: { showContent: true },
+    });
+  } catch (fetchErr) {
+  console.error("‼️ Błąd przy pobieraniu DAO:", fetchErr);
+  throw fetchErr;
+}
 
   // 1) Jeśli zwrócono błąd "notExists"
   if ('error' in object && object.error?.code === 'notExists') {
