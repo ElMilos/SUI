@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Switch } from "@headlessui/react";
 import { motion } from "framer-motion";
 import type { Proposal } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 
 type PortKey = "yes" | "no" | "abstain";
 
@@ -11,6 +12,7 @@ interface DecisionFlowProps {
 }
 
 export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps) {
+  const { darkMode } = useTheme();
   const processed = proposals.length;
 
   const counts = useMemo(() => {
@@ -20,10 +22,7 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
   }, [proposals]);
 
   const [enabledPorts, setEnabledPorts] = useState<Record<PortKey, boolean>>({ yes: true, no: true, abstain: true });
-
-  const togglePort = (key: PortKey) => {
-    setEnabledPorts((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const togglePort = (key: PortKey) => setEnabledPorts(prev => ({ ...prev, [key]: !prev[key] }));
 
   const paths = useMemo(() => {
     const keys: PortKey[] = ["yes", "no", "abstain"];
@@ -34,11 +33,16 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
       const yStart = 30;
       const yEnd = 40 + i * 60;
       const path = `M50,${yStart} C250,${yStart} 250,${yEnd} 450,${yEnd}`;
+      const color = key === "yes"
+        ? darkMode ? "#059669" : "#10B981"
+        : key === "no"
+          ? darkMode ? "#B91C1C" : "#EF4444"
+          : darkMode ? "#D97706" : "#FBBF24";
       return (
         <motion.path
           key={key}
           d={path}
-          stroke={key === "yes" ? "#10B981" : key === "no" ? "#EF4444" : "#FBBF24"}
+          stroke={color}
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
@@ -48,17 +52,39 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
         />
       );
     });
-  }, [counts, enabledPorts, processed]);
+  }, [counts, enabledPorts, processed, darkMode]);
+
+  const containerClass = `rounded-xl p-6 shadow-xl transition-colors duration-200 ${
+    darkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'
+  }`;
+
+  const boxClass = `rounded p-2 mb-2 text-center transition-colors duration-200 ${
+    darkMode ? 'bg-gray-700' : 'bg-white'
+  }`;
+
+  const switchBg = (enabled: boolean) => enabled
+    ? darkMode ? 'bg-indigo-600' : 'bg-indigo-500'
+    : darkMode ? 'bg-gray-700' : 'bg-gray-300';
+
+  const switchHandle = `inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200`;
+
+  const labelText = (key: PortKey) => key.charAt(0).toUpperCase() + key.slice(1);
+
+  const labelColor = darkMode ? 'text-gray-200' : 'text-gray-700';
+  const subTextColor = darkMode ? 'text-gray-400' : 'text-gray-500';
+
+  const thresholdBg = darkMode ? 'bg-gray-700' : 'bg-gray-300';
+  const thresholdFill = darkMode ? 'bg-indigo-500' : 'bg-indigo-600';
 
   return (
-    <div className="bg-gray-900 text-white rounded-xl p-6">
+    <div className={containerClass}>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">DECISION FLOW</h3>
       </div>
 
       <div className="flex">
         <div className="w-24 flex flex-col items-center">
-          <div className="bg-gray-800 rounded p-2 mb-2 text-center">
+          <div className={boxClass}>
             <span className="block text-xs">PROCESSED</span>
             <span className="block text-xl font-bold">{processed}</span>
           </div>
@@ -74,17 +100,17 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
           {(['yes', 'no', 'abstain'] as PortKey[]).map((key) => (
             <div key={key} className="flex items-center justify-between">
               <div className="text-sm">
-                <div>{key.charAt(0).toUpperCase() + key.slice(1)}</div>
-                <div className="text-xs text-gray-400">{counts[key]} votes</div>
+                <div className={labelColor}>{labelText(key)}</div>
+                <div className={`${subTextColor} text-xs`}>{counts[key]} votes</div>
               </div>
               <Switch
                 checked={enabledPorts[key]}
                 onChange={() => togglePort(key)}
-                className={`${enabledPorts[key] ? "bg-indigo-500" : "bg-gray-700"} relative inline-flex h-5 w-9 items-center rounded-full transition`}
+                className={`${switchBg(enabledPorts[key])} relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200`}
               >
                 <span className="sr-only">Toggle {key}</span>
                 <span
-                  className={`${enabledPorts[key] ? "translate-x-5" : "translate-x-1"} inline-block h-3 w-3 transform rounded-full bg-white transition`}
+                  className={`${switchHandle} ${enabledPorts[key] ? 'translate-x-5' : 'translate-x-1'}`}
                 />
               </Switch>
             </div>
@@ -97,8 +123,8 @@ export default function DecisionFlow({ proposals, threshold }: DecisionFlowProps
           <span>Sentiment Threshold</span>
           <span>{threshold}%</span>
         </div>
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div className="h-2 rounded-full bg-indigo-500" style={{ width: `${threshold}%` }} />
+        <div className={`w-full ${thresholdBg} rounded-full h-2`}>
+          <div className={`h-2 rounded-full ${thresholdFill}`} style={{ width: `${threshold}%` }} />
         </div>
       </div>
     </div>

@@ -1,20 +1,26 @@
-import React, { type ReactNode } from "react";
+import React from "react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { darkMode } = useTheme();
+
   return (
-    <div className="flex h-screen w-screen bg-gray-50 dark:bg-gray-800">
-      <Sidebar />
+    <div className={`flex flex-col h-screen w-screen transition-colors duration-200 ${
+      darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'
+    }`}>
+      {/* Navbar full width */}
+      <Navbar />
 
-      <div className="flex flex-col flex-1 min-w-0">
-        <Navbar />
-
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800">
+      {/* Content area: Sidebar + Main content */}
+      <div className="flex flex-1 min-h-0">
+        <Sidebar />
+        <main className="flex-1 min-h-0 overflow-y-auto p-6 transition-colors duration-200">
           {children}
         </main>
       </div>

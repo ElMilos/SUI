@@ -13,8 +13,11 @@ import type { Range } from "react-date-range";
 import { Funnel } from "lucide-react";
 import { format, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import SideChart from "../components/SideChart";
+import { useTheme } from "../contexts/ThemeContext";
+import LastProposalCard from "../components/LastProposalCard";
 
 export const Dashboard: React.FC = () => {
+  const { darkMode } = useTheme();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [filters, setFilters] = useState({
     yes: false,
@@ -44,7 +47,6 @@ export const Dashboard: React.FC = () => {
 
   // date picker handlers
   const openDatePicker = () => {
-    // przy otwieraniu date picker zamknij filtr
     setIsFilterOpen(false);
     setIsDatePickerOpen((o) => !o);
   };
@@ -64,7 +66,7 @@ export const Dashboard: React.FC = () => {
     setIsDatePickerOpen(false);
   };
 
-  // close filter dropdown on outside click
+  // close on outside click...
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
@@ -77,7 +79,6 @@ export const Dashboard: React.FC = () => {
     }
   }, [isFilterOpen]);
 
-  // close date picker on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (
@@ -93,7 +94,7 @@ export const Dashboard: React.FC = () => {
     }
   }, [isDatePickerOpen]);
 
-  // filtering with date & AI decision
+  // filtering logic
   const filtered = useMemo(() => {
     return proposals
       .filter((p) => {
@@ -140,23 +141,34 @@ export const Dashboard: React.FC = () => {
     });
     return Object.entries(map).map(([date, count]) => ({ date, count }));
   }, [filtered]);
+
   return (
-    <div className="space-y-6">
-      {/* header with both dropdowns */}
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between" ref={filterRef}>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+        <h2
+          className={`${
+            darkMode ? "text-gray-100" : "text-gray-900"
+          } text-2xl font-semibold`}
+        >
           Dashboard
         </h2>
         <div className="relative flex items-center space-x-2">
-          {/* Filter button + dropdown */}
           <button
             onClick={() => {
               setIsFilterOpen((o) => !o);
               setIsDatePickerOpen(false);
             }}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-900"
+            className={`${
+              darkMode
+                ? "bg-gray-900 hover:bg-gray-700"
+                : "bg-gray-100 hover:bg-gray-200"
+            } p-2 rounded-lg transition-colors duration-200`}
           >
-            <Funnel className="w-5 h-5 text-gray-900 dark:text-gray-300" />
+            <Funnel
+              className={`${
+                darkMode ? "text-gray-300" : "text-gray-900"
+              } w-5 h-5`}
+            />
           </button>
           <AnimatePresence>
             {isFilterOpen && (
@@ -168,15 +180,13 @@ export const Dashboard: React.FC = () => {
               />
             )}
           </AnimatePresence>
-
-          {/* Date picker button + dropdown */}
           <div ref={datePickerRef} className="relative">
             <DateFilter
               label={dateRangeLabel}
               onOpen={openDatePicker}
               isOpen={isDatePickerOpen}
               tempRange={tempRange}
-              onChangeRange={(ranges) => setTempRange(ranges)}
+              onChangeRange={setTempRange}
               onApply={applyDateRange}
               onReset={() => {
                 setAppliedRange(null);
@@ -187,16 +197,14 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      {proposals.length > 0 && <LastProposalCard proposal={proposals[0]} />}
       <div className="flex space-x-6">
-        {/* DecisionFlow zajmie 2/3 szerokości kontenera */}
         <div className="w-4/6">
           <DecisionFlow
             proposals={filtered}
             threshold={Math.round(avgSentiment)}
           />
         </div>
-
-        {/* SideChart zajmie 1/3 szerokości kontenera i będzie węższy */}
         <div className="w-2/6">
           <SideChart voteDistribution={voteDistribution} />
         </div>
@@ -207,7 +215,6 @@ export const Dashboard: React.FC = () => {
         participation={participation}
         sentimentTrend={sentimentTrend}
       />
-
       <ChartsSection
         proposalTrend={proposalTrend}
         sentimentTrend={sentimentTrend}

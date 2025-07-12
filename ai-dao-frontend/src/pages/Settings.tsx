@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { User, ShieldCheck, Bell, Lock, Edit2 } from "lucide-react";
 import { Switch } from "@headlessui/react";
+import { useTheme } from '../contexts/ThemeContext';
 
 const Settings: React.FC = () => {
+  const { darkMode } = useTheme();
+
   // Notifications
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
@@ -41,18 +44,25 @@ const Settings: React.FC = () => {
     setShowEditModal(false);
   };
 
+  const sectionBg = darkMode ? 'bg-gray-800' : 'bg-white';
+  const sectionText = darkMode ? 'text-gray-100' : 'text-gray-900';
+  const sectionBorder = darkMode ? 'border border-gray-700' : '';
+  const labelText = darkMode ? 'text-gray-300' : 'text-gray-700';
+  const inputBg = darkMode ? 'bg-gray-700' : 'bg-gray-50';
+  const inputBorder = darkMode ? 'border-gray-600' : 'border-gray-300';
+
   return (
     <div className="space-y-8 p-6">
-      <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-100">
-        Settings
+      <h2 className="text-3xl font-semibold transition-colors duration-200">
+        <span className={sectionText}>Settings</span>
       </h2>
 
       {/* Account Section */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 space-y-4">
-        <h3 className="flex items-center text-lg font-medium text-gray-900 dark:text-gray-100">
+      <section className={`${sectionBg} ${sectionBorder} rounded-lg shadow p-6 space-y-4 transition-colors duration-200`}>
+        <h3 className={`flex items-center text-lg font-medium transition-colors duration-200 ${sectionText}`}>
           <User className="w-5 h-5 mr-2" /> Account
         </h3>
-        <div className="space-y-2 text-gray-600 dark:text-gray-300">
+        <div className={`space-y-2 transition-colors duration-200 ${labelText}`}>
           <p>
             <span className="font-medium">Username:</span> {username}
           </p>
@@ -67,13 +77,13 @@ const Settings: React.FC = () => {
               setEditEmail(email);
               setShowEditModal(true);
             }}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors duration-200"
           >
             <Edit2 className="w-4 h-4 mr-2" /> Edit Profile
           </button>
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            className={`px-4 py-2 rounded transition-colors duration-200 ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}
           >
             Change Password
           </button>
@@ -81,60 +91,42 @@ const Settings: React.FC = () => {
       </section>
 
       {/* Security Section */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 space-y-4">
-        <h3 className="flex items-center text-lg font-medium text-gray-900 dark:text-gray-100">
+      <section className={`${sectionBg} ${sectionBorder} rounded-lg shadow p-6 space-y-4 transition-colors duration-200`}>
+        <h3 className={`flex items-center text-lg font-medium transition-colors duration-200 ${sectionText}`}>
           <Lock className="w-5 h-5 mr-2" /> Security
         </h3>
         <div className="flex items-center justify-between">
-          <span className="text-gray-700 dark:text-gray-300">
-            Two-Factor Authentication
-          </span>
+          <span className={labelText}>Two-Factor Authentication</span>
           <Switch
             checked={twoFA}
             onChange={setTwoFA}
-            className={`${
-              twoFA ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-700"
-            } relative inline-flex h-5 w-10 rounded-full transition-colors focus:outline-none`}
+            className={`${twoFA ? 'bg-indigo-600' : darkMode ? 'bg-gray-700' : 'bg-gray-200'} relative inline-flex h-5 w-10 rounded-full transition-colors duration-200 focus:outline-none`}
           >
             <span
-              className={`${
-                twoFA ? "translate-x-5" : "translate-x-0"
-              } inline-block h-5 w-5 transform bg-white rounded-full shadow transition-transform`}
+              className={`${twoFA ? 'translate-x-5' : 'translate-x-0'} inline-block h-5 w-5 transform bg-white rounded-full shadow transition-transform duration-200`}
             />
           </Switch>
         </div>
       </section>
 
       {/* Notifications Section */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 space-y-4">
-        <h3 className="flex items-center text-lg font-medium text-gray-900 dark:text-gray-100">
+      <section className={`${sectionBg} ${sectionBorder} rounded-lg shadow p-6 space-y-4 transition-colors duration-200`}>
+        <h3 className={`flex items-center text-lg font-medium transition-colors duration-200 ${sectionText}`}>
           <Bell className="w-5 h-5 mr-2" /> Notifications
         </h3>
         {[
-          {
-            label: "Email Notifications",
-            state: emailNotifications,
-            setter: setEmailNotifications,
-          },
-          {
-            label: "Push Notifications",
-            state: pushNotifications,
-            setter: setPushNotifications,
-          },
+          { label: 'Email Notifications', state: emailNotifications, setter: setEmailNotifications },
+          { label: 'Push Notifications', state: pushNotifications, setter: setPushNotifications },
         ].map(({ label, state, setter }) => (
           <div key={label} className="flex items-center justify-between">
-            <span className="text-gray-700 dark:text-gray-300">{label}</span>
+            <span className={labelText}>{label}</span>
             <Switch
               checked={state}
               onChange={setter}
-              className={`${
-                state ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-700"
-              } relative inline-flex h-5 w-10 rounded-full transition-colors focus:outline-none`}
+              className={`${state ? 'bg-indigo-600' : darkMode ? 'bg-gray-700' : 'bg-gray-200'} relative inline-flex h-5 w-10 rounded-full transition-colors duration-200 focus:outline-none`}
             >
               <span
-                className={`${
-                  state ? "translate-x-5" : "translate-x-0"
-                } inline-block h-5 w-5 transform bg-white rounded-full shadow transition-transform`}
+                className={`${state ? 'translate-x-5' : 'translate-x-0'} inline-block h-5 w-5 transform bg-white rounded-full shadow transition-transform duration-200`}
               />
             </Switch>
           </div>
@@ -142,55 +134,49 @@ const Settings: React.FC = () => {
       </section>
 
       {/* Appearance Section */}
-      <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 space-y-4">
-        <h3 className="flex items-center text-lg font-medium text-gray-900 dark:text-gray-100">
+      <section className={`${sectionBg} ${sectionBorder} rounded-lg shadow p-6 space-y-4 transition-colors duration-200`}>
+        <h3 className={`flex items-center text-lg font-medium transition-colors duration-200 ${sectionText}`}>
           <ShieldCheck className="w-5 h-5 mr-2" /> Appearance
         </h3>
         <div className="flex items-center justify-between">
-          <span className="text-gray-700 dark:text-gray-300">Dark Mode</span>
+          <span className={labelText}>{ !darkMode ? "Light Mode" : "Dark Mode"}</span>
         </div>
       </section>
 
       {/* Edit Profile Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-96">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Edit Profile
-            </h4>
+          <div className={`${sectionBg} ${sectionBorder} p-6 rounded-lg shadow-lg w-96 transition-colors duration-200`}>
+            <h4 className={`text-lg font-semibold mb-4 transition-colors duration-200 ${sectionText}`}>Edit Profile</h4>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Username
-                </label>
+                <label className={`block text-sm font-medium transition-colors duration-200 ${labelText}`}>Username</label>
                 <input
                   value={editUsername}
                   onChange={(e) => setEditUsername(e.target.value)}
-                  className="mt-1 block w-full p-2 border rounded dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                  className={`mt-1 block w-full p-2 rounded border transition-colors duration-200 ${inputBg} ${inputBorder}`}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Email
-                </label>
+                <label className={`block text-sm font-medium transition-colors duration-200 ${labelText}`}>Email</label>
                 <input
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className="mt-1 block w-full p-2 border rounded dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                  className={`mt-1 block w-full p-2 rounded border transition-colors duration-200 ${inputBg} ${inputBorder}`}
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                className={`px-4 py-2 rounded transition-colors duration-200 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleEditProfile}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors duration-200"
               >
                 Save
               </button>
@@ -202,55 +188,35 @@ const Settings: React.FC = () => {
       {/* Change Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-96">
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Change Password
-            </h4>
+          <div className={`${sectionBg} ${sectionBorder} p-6 rounded-lg shadow-lg w-96 transition-colors duration-200`}>
+            <h4 className={`text-lg font-semibold mb-4 transition-colors duration-200 ${sectionText}`}>Change Password</h4>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="mt-1 block w-full p-2 border rounded dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 block w-full p-2 border rounded dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1 block w-full p-2 border rounded dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                />
-              </div>
+              {[
+                { label: 'Current Password', value: currentPassword, setter: setCurrentPassword, type: 'password' },
+                { label: 'New Password', value: newPassword, setter: setNewPassword, type: 'password' },
+                { label: 'Confirm New Password', value: confirmPassword, setter: setConfirmPassword, type: 'password' },
+              ].map(({ label, value, setter, type }) => (
+                <div key={label}>
+                  <label className={`block text-sm font-medium transition-colors duration-200 ${labelText}`}>{label}</label>
+                  <input
+                    type={type}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                    className={`mt-1 block w-full p-2 rounded border transition-colors duration-200 ${inputBg} ${inputBorder}`}
+                  />
+                </div>
+              ))}
             </div>
             <div className="mt-6 flex justify-end space-x-2">
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                className={`px-4 py-2 rounded transition-colors duration-200 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
               >
                 Cancel
               </button>
               <button
                 onClick={handlePasswordChange}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors duration-200"
               >
                 Save
               </button>
