@@ -1,7 +1,6 @@
 from pysui import SyncClient, SuiConfig
 from pysui.sui.sui_config import SuiConfig
 from pysui.sui.sui_types import SuiString, SuiBoolean, SuiU64
-from pysui.sui import SuiTransaction
 import os
 
 
