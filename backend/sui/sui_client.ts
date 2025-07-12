@@ -8,7 +8,6 @@ dotenv.config();
 // Wczytywanie zmiennych środowiskowych
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
 const DAO_ID = process.env.SUI_DAO_ID;
-const FULLNODE_URL = 'https://fullnode.devnet.sui.io:443';
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 
 // Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
