@@ -206,6 +206,8 @@ export async function voteOnProposal(
   const tx = new Transaction();
 
   const daoObject = tx.object(DAO_ID as string);
+    tx.setSender(sender);
+    tx.setGasBudget(50_000_000); 
 
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::vote`,
@@ -241,6 +243,8 @@ export async function approveProposal(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
   const daoObject = tx.object(DAO_ID as string); // DAO jako obiekt z mutacją
+    tx.setSender(sender);
+    tx.setGasBudget(50_000_000); 
 
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::approve_proposal`,
@@ -252,6 +256,8 @@ export async function approveProposal(proposalId: number): Promise<void> {
 
   const txBytes = await tx.build({ client });
   const { signature } = await keypair.signTransaction(txBytes);
+    tx.setSender(sender);
+    tx.setGasBudget(50_000_000); 
 
   const result = await client.executeTransactionBlock({
     transactionBlock: txBytes,

@@ -46,19 +46,20 @@ async function main() {
     console.log(`🧠 Sentyment społeczności: ${score.toFixed(2)}`);
 
     const proposalId = 0; // <- Ustaw odpowiedni ID
-
+    const intscore = parseInt((score.toFixed(2) * 100).toString(), 10); 
+    const intconfidence = parseInt((score.toFixed(2) * 100).toString(), 10); 
     if (confidence < 0.7) {
       console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
-      await suiClient.voteOnProposal(proposalId, 1,score, confidence); // <- jeśli masz taką opcję
+      await suiClient.voteOnProposal(proposalId, 1,intscore, intconfidence); // <- jeśli masz taką opcję
       return;
     }
 
     if (score >= 0.6) {
       console.log(`✅ Głosujemy ZA. Pewność: ${confidence.toFixed(2)}`);
-      await suiClient.voteOnProposal(proposalId, 2 ,score, confidence); // <- jeśli masz taką opcję
+      await suiClient.voteOnProposal(proposalId, 2 ,intscore, intconfidence); // <- jeśli masz taką opcję
     } else {
       console.log(`❌ Głosujemy PRZECIW. Pewność: ${confidence.toFixed(2)}`);
-      await suiClient.voteOnProposal(proposalId, 0 ,score, confidence); // <- jeśli masz taką opcję
+      await suiClient.voteOnProposal(proposalId, 0 ,intscore, intconfidence); // <- jeśli masz taką opcję
     }
 
   } catch (err: any) {
