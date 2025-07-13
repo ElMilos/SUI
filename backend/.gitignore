@@ -24,3 +24,7 @@ Editor directories and files
 *.njsproj
 *.sln
 *.sw?
+
+*.pyc
+__pycache__/
+/__pycache__/

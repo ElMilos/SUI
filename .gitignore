@@ -25,4 +25,6 @@ Editor directories and files
 *.sln
 *.sw?
 
-.env
+*.pyc
+__pycache__/
+/__pycache__/
