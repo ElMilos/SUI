@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "serve:dev": "ts-node-dev --respawn --transpile-only ./sui/server.ts",
     "agent:dev": "ts-node-dev --respawn --transpile-only ./Applicant_agent/agent.ts",
-    "dev": "concurrently \"npm:serve:dev\" \"npm:agent:dev\"",
+    "voting_agent:dev": "ts-node-dev --respawn --transpile-only ./voting_agent/agent.ts",
+    "dev": "concurrently \"npm:serve:dev\" \"npm:agent:dev\" \"npm:voting_agent:dev\"",
     "start:prod": "npm run build && npm run start",
     "lint": "eslint . --ext .ts,.js",
     "test": "jest"
