@@ -188,4 +188,47 @@ module 0x0::dao {
 
         event::emit(agent_event);
     }
+    // Zamyka głosowanie — bez warunków czasowych, oceniając wyniki
+    public entry fun close_voting(
+        dao: &mut DAO,
+        proposal_id: u64
+    ) {
+        let len = vector::length(&dao.proposals);
+        let mut i = 0;
+    
+        while (i < len) {
+            let mut prop = vector::borrow_mut(&mut dao.proposals, i);
+            if (prop.id == proposal_id) {
+                // tylko dla propozycji w fazie głosowania
+                assert!(prop.status == ProposalStatus::Voting, E_WRONG_STATUS_VOTING);
+    
+                let mut yes = 0;
+                let mut no = 0;
+    
+                let votes = &prop.votes;
+                let n = vector::length(votes);
+                let mut j = 0;
+    
+                while (j < n) {
+                    let vote = vector::borrow(votes, j);
+                    if (vote.vote_code == 0) {
+                        yes = yes + 1;
+                    } else if (vote.vote_code == 1) {
+                        no = no + 1;
+                    };
+                    j = j + 1;
+                };
+    
+                // Prosty mechanizm większości
+                if (yes > no) {
+                    prop.status = ProposalStatus::Approved;
+                } else {
+                    prop.status = ProposalStatus::Rejected;
+                };
+    
+                return;
+            };
+            i = i + 1;
+        };
+    }
 }
