@@ -12,19 +12,21 @@ socket.on('new_vote', (data) => {
   
   console.log('Nowe głosowanie rozpoczęte:', data);
 
+    const intscore = parseInt((sentiment.toFixed(2) * 100).toString(), 10); 
+    const intconfidence = parseInt((confidence.toFixed(2) * 100).toString(), 10); 
   // Twoja logika do głosowania
   if (confidence < 0.7) {
       console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
-      suiClient.voteOnProposal(proposalId, 1,sentiment, confidence); // <- jeśli masz taką opcję
+      suiClient.voteOnProposal(proposalId, 1,intscore, intconfidence); // <- jeśli masz taką opcję
       return;
     }
 
     if (sentiment >= 0.6) {
       console.log(`✅ Głosujemy ZA. Pewność: ${confidence.toFixed(2)}`);
-      suiClient.voteOnProposal(proposalId, 2 ,sentiment, confidence); // <- jeśli masz taką opcję
+      suiClient.voteOnProposal(proposalId, 1,intscore, intconfidence); // <- jeśli masz taką opcję
     } else {
       console.log(`❌ Głosujemy PRZECIW. Pewność: ${confidence.toFixed(2)}`);
-      suiClient.voteOnProposal(proposalId, 0 ,sentiment, confidence); // <- jeśli masz taką opcję
+      suiClient.voteOnProposal(proposalId, 1,intscore, intconfidence); // <- jeśli masz taką opcję
     }
 });
 
