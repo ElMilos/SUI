@@ -4,7 +4,7 @@ import path from 'path';
 import { io } from 'socket.io-client';
 
 // Łączenie z serwerem WebSocket
-const socket = io('http://localhost:3001');  // Upewnij się, że adres jest poprawny
+const socket = io('http://localhost:3002');  // Upewnij się, że adres jest poprawny
 
 // Funkcja do nasłuchiwania na powiadomienie o nowym głosowaniu
 socket.on('new_vote', (data) => {
@@ -15,7 +15,7 @@ socket.on('new_vote', (data) => {
   // Twoja logika do głosowania
   if (confidence < 0.7) {
       console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
-      suiClient.voteOnProposal(proposalId, 1,sentiment, confidence); // <- jeśli masz taką opcję
+      suiClient.voteOnProposal(proposalId, 1, sentiment, confidence); // <- jeśli masz taką opcję
       return;
     }
 
@@ -49,7 +49,7 @@ async function main() {
 
     if (confidence < 0.7) {
       console.log(`⚠️ Pewność analizy zbyt niska (${confidence.toFixed(2)}), wstrzymujemy się od głosu.`);
-      await suiClient.voteOnProposal(proposalId, 1,score, confidence); // <- jeśli masz taką opcję
+      await suiClient.voteOnProposal(proposalId, 1, score, confidence); // <- jeśli masz taką opcję
       return;
     }
 

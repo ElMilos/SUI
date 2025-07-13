@@ -1,8 +1,22 @@
 module 0x0::dao {
-    use std::string;
+    // --- Imports ---
+    use std::string::{Self, String};
+    use std::vector;
+    use std::option::{Self, Option};
     use sui::transfer;
     use sui::event;
+    use sui::object::{Self, UID};
+    use sui::tx_context::{Self, TxContext};
 
+    // --- Error Constants ---
+    const E_PROPOSER_ONLY: u64 = 1;
+    const E_WRONG_STATUS_OPEN: u64 = 2;
+    const E_WRONG_STATUS_VOTING: u64 = 3;
+    const E_INVALID_VOTE_CODE: u64 = 100;
+    const E_PROPOSAL_NOT_FOUND: u64 = 101;
+
+    // --- Enums and Structs ---
+    
     // Proposal status: Open, Voting, Approved, Rejected
     public enum ProposalStatus has store, drop, copy {
         Open,
@@ -44,6 +58,17 @@ module 0x0::dao {
         id: UID,
         proposals: vector<Proposal>,
         next_id: u64,
+    }
+
+    public struct AgentEvent has store, drop, copy {
+        proposal_id: u64,
+        status: ProposalStatus,
+    }
+
+    public struct ProposalNotification has store {
+        proposal_id: u64,
+        dao_id: address,
+        notification_type: vector<u8>,
     }
 
     // Creates a DAO
@@ -133,11 +158,34 @@ module 0x0::dao {
         };
     }
 
-
-
-    public struct ProposalNotification has store {
+    public entry fun notify_agents(
+        dao: &mut DAO,
         proposal_id: u64,
-        dao_id: address,
-        notification_type: vector<u8>,
+        // ctx jest nieużywany, ale można go zostawić na przyszłość
+        _ctx: &mut TxContext
+    ) {
+        let len = vector::length(&dao.proposals);
+        let mut i = 0;
+        let mut found_proposal_status: Option<ProposalStatus> = option::none();
+
+        while (i < len) {
+            let prop = vector::borrow(&dao.proposals, i);
+            if (prop.id == proposal_id) {
+                found_proposal_status = option::some(prop.status);
+                break;
+            };
+            i = i + 1;
+        };
+
+        assert!(option::is_some(&found_proposal_status), E_PROPOSAL_NOT_FOUND);
+
+        let status = option::destroy_some(found_proposal_status);
+
+        let agent_event = AgentEvent {
+            proposal_id,
+            status,
+        };
+
+        event::emit(agent_event);
     }
 }

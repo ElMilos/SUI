@@ -2,6 +2,7 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { SuiClient, getFullnodeUrl, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import * as dotenv from 'dotenv';
+import { execSync } from 'child_process';
 dotenv.config();
 
 // Wczytywanie zmiennych środowiskowych
@@ -159,8 +160,8 @@ export async function startVoting(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
   const daoObject = tx.object(DAO_ID as string);  // &mut DAO
-    tx.setSender(sender);
-    tx.setGasBudget(50_000_000); 
+  tx.setSender(sender);
+  tx.setGasBudget(50_000_000); 
 
   // Rozpoczęcie głosowania
   tx.moveCall({
@@ -172,13 +173,13 @@ export async function startVoting(proposalId: number): Promise<void> {
   });
 
   // Rozsyłanie sygnału do agentów
- // tx.moveCall({
- //   target: `${PACKAGE_ID}::dao::notify_agents`,
- //   arguments: [
- //     daoObject,
- //     tx.pure.u64(proposalId),
- //   ],
- // });
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::notify_agents`,
+    arguments: [
+      daoObject,
+      tx.pure.u64(proposalId),
+    ],
+  });
 
   const txBytes = await tx.build({ client });
   
