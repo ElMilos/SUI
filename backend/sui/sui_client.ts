@@ -159,22 +159,13 @@ export async function createProposal(title: string, description: string): Promis
 export async function startVoting(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
-  const daoObject = tx.object(DAO_ID as string);  // &mut DAO
+  const daoObject = tx.object(DAO_ID as string);
   tx.setSender(sender);
-  tx.setGasBudget(50_000_000); 
+  tx.setGasBudget(50_000_000);
 
-  // Rozpoczęcie głosowania
+  // TYLKO JEDNO WYWOŁANIE - start_voting z modułu DAO emituje już AgentEvent
   tx.moveCall({
-    target: `${PACKAGE_ID}::dao::start_voting`,
-    arguments: [
-      daoObject,
-      tx.pure.u64(proposalId),
-    ],
-  });
-
-  // Rozsyłanie sygnału do agentów
-  tx.moveCall({
-    target: `${PACKAGE_ID}::dao::notify_agents`,
+    target: `${PACKAGE_ID}::dao::start_voting`, // To wywoła emitowanie AgentEvent w Move
     arguments: [
       daoObject,
       tx.pure.u64(proposalId),
@@ -182,18 +173,16 @@ export async function startVoting(proposalId: number): Promise<void> {
   });
 
   const txBytes = await tx.build({ client });
-  
-  // Podpisanie transakcji
-  const { signature } = await keypair.signTransaction(txBytes);  // Sign the transaction
+  const { signature } = await keypair.signTransaction(txBytes);
 
   const result = await client.executeTransactionBlock({
     transactionBlock: txBytes,
     signature,
-    options: { showEffects: true },
+    options: { showEffects: true, showEvents: true }, // Dodaj showEvents: true
     requestType: "WaitForLocalExecution",
   });
 
-  console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
+  console.log(`✅ Voting started for proposal ${proposalId}:`, result.digest);
 }
 
 

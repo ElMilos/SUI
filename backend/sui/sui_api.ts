@@ -58,16 +58,15 @@ router.post("/vote", async (req, res) => {
     });
   }
 
-  try {
-    const digest = await startVoting(proposalId);
-    res.json({ digest });
+    try {
+        const digest = await startVoting(proposalId);
+        res.json({ digest });
 
-    const io = req.app.get("io") as IOServer;
-    io.emit("new_vote", { proposalId, voteCode, sentiment, confidence }); // Wysyłanie powiadomienia do agentów
-    await broadcastProposals(io);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+        const io = req.app.get("io") as IOServer;
+        await broadcastProposals(io);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Endpoint do zapraszania członków do DAO

@@ -117,14 +117,19 @@ module 0x0::dao {
         while (i < len) {
             let mut prop = vector::borrow_mut(&mut dao.proposals, i);
             if (prop.id == proposal_id) {
-                assert!(prop.proposer == tx_context::sender(ctx), 1);
-                assert!(prop.status == ProposalStatus::Open, 2);
+                assert!(prop.proposer == tx_context::sender(ctx), E_PROPOSER_ONLY);
+                assert!(prop.status == ProposalStatus::Open, E_WRONG_STATUS_OPEN);
                 prop.status = ProposalStatus::Voting;
-                //notify_agents(dao.id, proposal_id);
+                // Emituj zdarzenie AgentEvent bezpośrednio tutaj
+                event::emit(AgentEvent {
+                    proposal_id,
+                    status: prop.status,
+                });
                 return;
             };
             i = i + 1;
         };
+        assert!(false, E_PROPOSAL_NOT_FOUND); // Jeśli propozycja nie zostanie znaleziona
     }
 
     // Votes (vote_code: 0=yes, 1=no, 2=abstain)
