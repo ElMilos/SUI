@@ -1,6 +1,7 @@
 module 0x0::dao {
     use std::string;
     use sui::transfer;
+    use sui::signer;
 
     /// Status propozycji: dyskusja (Open), głosowanie (Voting), zatwierdzona (Approved), odrzucona (Rejected)
     public enum ProposalStatus has store, drop, copy {
@@ -38,22 +39,57 @@ module 0x0::dao {
         feedbacks: vector<Feedback>,
     }
 
-    /// Główny obiekt DAO
+     /// Główny obiekt DAO
     public struct DAO has key, store {
         id: UID,
         proposals: vector<Proposal>,
         next_id: u64,
+        authorized_devices: vector<address>,
+        owner: address,
     }
 
     /// Tworzy DAO
     public entry fun create_dao(ctx: &mut TxContext) {
+        let creator = sender(ctx);
         let dao = DAO {
-            id: object::new(ctx),
+            id: new(ctx),
             proposals: vector::empty<Proposal>(),
             next_id: 0,
+            authorized_devices: vector::empty<address>(),
+            owner: creator,
         };
-        let sender = tx_context::sender(ctx);
-        transfer::public_transfer(dao, sender);
+        transfer::public_transfer(dao, creator);
+    }
+
+    /// Dodaje adres urządzenia z uprawnieniem do edycji
+    public entry fun add_device(dao: &mut DAO, signer_ref: &signer, new_device: address) {
+        let sender_addr = signer::address_of(signer_ref);
+        assert!(sender_addr == dao.owner, 0);
+        vector::push_back(&mut dao.authorized_devices, new_device);
+    }
+
+    /// Sprawdza, czy adres ma dostęp do DAO
+    fun has_access(dao: &DAO, addr: address): bool {
+        let len = vector::length(&dao.authorized_devices);
+        let mut i = 0;
+        while (i < len) {
+            if (*vector::borrow(&dao.authorized_devices, i) == addr) {
+                return true;
+            };
+            i = i + 1;
+        };
+        false
+    }
+
+    /// Przykładowa funkcja wykonywana przez urządzenie
+    public entry fun device_action(dao: &mut DAO, signer_ref: &signer, message: vector<u8>) {
+        let addr = signer::address_of(signer_ref);
+        assert!(has_access(dao, addr), 1);
+
+        let id = dao.next_id;
+        dao.next_id = id + 1;
+        let proposal = Proposal { id: id, description: message };
+        vector::push_back(&mut dao.proposals, proposal);
     }
 
     /// Tworzy propozycję (tytuł + data)
