@@ -6,7 +6,7 @@ dotenv.config();
 
 // Wczytywanie zmiennych środowiskowych
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
-const DAO_ID = process.env.DAO_ID;
+const DAO_ID = process.env.SUI_DAO_ID;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
 
 // Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
@@ -145,7 +145,7 @@ export async function startVoting(
   // DAO_ID jako obiekt mutowalny
   const daoObject = tx.object(DAO_ID as string); // &mut DAO
 
-  // 1. Rozpocznij głosowanie
+  // Rozpocznij głosowanie na DAO
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::start_voting`,
     arguments: [
@@ -154,6 +154,27 @@ export async function startVoting(
     ],
   });
 
+  // Rozsyłanie sygnału do innych agentów na całej sieci
+  tx.moveCall({
+    target: `${PACKAGE_ID}::dao::notify_agents`,
+    arguments: [
+      daoObject,
+      tx.pure.u64(proposalId),
+    ],
+  });
+
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
 }
 
 export async function voteOnProposal(

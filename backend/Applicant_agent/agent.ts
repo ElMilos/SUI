@@ -8,10 +8,11 @@ dotenv.config();
 
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID!;
-const DAO_ID = process.env.DAO_ID!;
+const DAO_ID = process.env.SUI_DAO_ID!;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY!;
 
-const secretKey = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKeyBuffer = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKey = new Uint8Array(secretKeyBuffer);
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const suiClient = new SuiClient({ url: 'https://fullnode.devnet.sui.io' });
 const sender = keypair.getPublicKey().toSuiAddress();
@@ -22,12 +23,13 @@ import * as Sui from '../sui/sui_client';
 async function createProposalByDiscord(title: string, description: string) {
   const tx = new Transaction();
     tx.setSender(sender);
-  tx.moveCall({
+    tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
-        tx.object(DAO_ID), 
-        tx.pure.string(title),
-        tx.pure.string(description),
+      tx.object(DAO_ID as string),               // &mut DAO
+      tx.pure.string(title),                     // title: string
+      tx.pure.string(description),               // summary: string
+      tx.pure.u64(Date.now()),                   // date: u64
     ],
   });
 

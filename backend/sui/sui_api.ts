@@ -1,14 +1,14 @@
-import express from 'express';
-import { getDaoState, createProposal, startVoting } from './sui_client';
-
+import express from "express";
+import { getDaoState, createProposal, startVoting } from "./sui_client";
+import { Server as IOServer } from "socket.io";
 
 const router = express.Router();
-const DAO_ID = process.env.DAO_ID;
+const DAO_ID = process.env.SUI_DAO_ID;
 if (!DAO_ID) {
-  throw new Error('Brakuje zmiennej środowiskowej DAO_ID w pliku .env');
+  throw new Error("Brakuje zmiennej środowiskowej DAO_ID w pliku .env");
 }
 
-async function broadcastProposals(io: import('socket.io').Server) {
+async function broadcastProposals(io: import("socket.io").Server) {
   const dao = await getDaoState(DAO_ID as string);
   io.emit("proposals", dao.proposals);
 }
@@ -32,7 +32,7 @@ router.post("/proposal", async (req, res) => {
     const digest = await createProposal(title, description);
     res.json({ digest });
 
-    const io = req.app.get('io') as import('socket.io').Server;
+    const io = req.app.get("io") as import("socket.io").Server;
     await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -41,23 +41,25 @@ router.post("/proposal", async (req, res) => {
 
 router.post("/vote", async (req, res) => {
   const { proposalId, voteCode, sentiment, confidence } = req.body;
-  
+
   if (
-    typeof proposalId !== 'number' ||
+    typeof proposalId !== "number" ||
     ![0, 1, 2].includes(voteCode) ||
-    typeof sentiment !== 'number' ||
-    typeof confidence !== 'number'
+    typeof sentiment !== "number" ||
+    typeof confidence !== "number"
   ) {
     return res.status(400).json({
-      error: 'Missing or invalid vote parameters. Required: proposalId (number), voteCode (0|1|2), sentiment (number), confidence (number)',
+      error:
+        "Missing or invalid vote parameters. Required: proposalId (number), voteCode (0|1|2), sentiment (number), confidence (number)",
     });
   }
 
   try {
-    const digest = await startVoting(proposalId, voteCode, sentiment, confidence);
+    const digest = await startVoting(proposalId);
     res.json({ digest });
 
-    const io = req.app.get('io') as import('socket.io').Server;
+    const io = req.app.get("io") as IOServer;
+    io.emit("new_vote", { proposalId, voteCode, sentiment, confidence }); // Wysyłanie powiadomienia do agentów
     await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
