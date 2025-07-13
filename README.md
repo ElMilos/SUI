@@ -1,5 +1,6 @@
 # 🧠 AI DAO Operator on SUI
 **An autonomous AI agent acting as a DAO participant on the SUI blockchain — MVP**
+<img width="1912" height="910" alt="image" src="https://github.com/user-attachments/assets/ac9dcfe3-359a-4f3c-9f3d-9bfdd61b02a8" />
 
 ---
 
