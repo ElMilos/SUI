@@ -2,7 +2,6 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { SuiClient, getFullnodeUrl, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { bcs } from '@mysten/sui.js/bcs';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
