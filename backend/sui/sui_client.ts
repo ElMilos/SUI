@@ -7,11 +7,15 @@ dotenv.config();
 // Wczytywanie zmiennych środowiskowych
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID;
 const DAO_ID = process.env.SUI_DAO_ID;
-const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY;
+const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY!;
+const secretKeyBuffer = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKey = new Uint8Array(secretKeyBuffer);
+const keypair = Ed25519Keypair.fromSecretKey(secretKey);
+const sender = keypair.getPublicKey().toSuiAddress();
 
 // Możliwość ustawienia sieci (devnet/testnet/mainnet) lub bezpośredniego URL
 const SUI_NETWORK = process.env.SUI_NETWORK; // np. 'devnet'
-const FULLNODE_URL = process.env.SUI_FULLNODE_URL || (SUI_NETWORK ? getFullnodeUrl(SUI_NETWORK as 'mainnet' | 'testnet' | 'devnet' | 'localnet') : undefined);
+const FULLNODE_URL = process.env.SUI_FULLNODE_URL || (SUI_NETWORK ? getFullnodeUrl(SUI_NETWORK as 'mainnet' | 'devnet' | 'devnet' | 'localnet') : undefined);
 
 // Walidacja
 if (!PACKAGE_ID) throw new Error('Brakuje zmiennej środowiskowej SUI_PACKAGE_ID');
@@ -20,17 +24,7 @@ if (!PRIVATE_KEY_BASE64) throw new Error('Brakuje zmiennej środowiskowej SUI_PR
 if (!FULLNODE_URL) throw new Error('Brakuje zmiennej środowiskowej SUI_FULLNODE_URL lub SUI_NETWORK');
 
 
-// Inicjalizacja klucza i klienta
-const secretKey = Buffer.from(
-  "85c98bc44f9bb7cedf5672c21ee5194d44659176870bb8751c33ee9ca80c229a",
-  "hex"
-);
-if (secretKey.length !== 32) {
-  throw new Error(
-    `Invalid secret key length. Expected 32 bytes, got ${secretKey.length}`
-  );
-}
-const keypair = Ed25519Keypair.fromSecretKey(secretKey);
+
 const client = new SuiClient({ url: FULLNODE_URL });
 
 interface DaoProposal {
@@ -165,6 +159,8 @@ export async function startVoting(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
   const daoObject = tx.object(DAO_ID as string);  // &mut DAO
+    tx.setSender(sender);
+    tx.setGasBudget(50_000_000); 
 
   // Rozpoczęcie głosowania
   tx.moveCall({
@@ -176,13 +172,13 @@ export async function startVoting(proposalId: number): Promise<void> {
   });
 
   // Rozsyłanie sygnału do agentów
-  tx.moveCall({
-    target: `${PACKAGE_ID}::dao::notify_agents`,
-    arguments: [
-      daoObject,
-      tx.pure.u64(proposalId),
-    ],
-  });
+ // tx.moveCall({
+ //   target: `${PACKAGE_ID}::dao::notify_agents`,
+ //   arguments: [
+ //     daoObject,
+ //     tx.pure.u64(proposalId),
+ //   ],
+ // });
 
   const txBytes = await tx.build({ client });
   

@@ -11,6 +11,7 @@ const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const PACKAGE_ID = process.env.SUI_PACKAGE_ID!;
 const DAO_ID = process.env.SUI_DAO_ID!;
 const PRIVATE_KEY_BASE64 = process.env.SUI_PRIVATE_KEY!;
+const DSC_ID = process.env.TARGET_DISCORD_USERNAME_ID!;
 
 const secretKeyBuffer = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
 const secretKey = new Uint8Array(secretKeyBuffer);
@@ -48,28 +49,10 @@ async function createProposalByDiscord(title: string, description: string) {
         requestType: 'WaitForLocalExecution',
     });
 
-    let proposalId: string | undefined;
-
-     if (result.effects) {
-    const {objectChanges, events } = result;
-
-    console.log('Zmienione obiekty:', objectChanges); // Zmienione obiekty mogą zawierać zwrócone dane
-
-    // Jeśli transakcja generuje zdarzenia, mogą zawierać istotne dane zwrócone przez metodę
-    if (events) {
-      console.log('Wydarzenia transakcji:', events);
-    }
-
-    // Możesz również szukać innych szczegółów, np. w 'rawTransaction' (jeśli dostępne)
-    if (result.rawTransaction) {
-      console.log('Surowa transakcja:', result.rawTransaction);
-    }
-
-    return objectChanges; // W tym miejscu możesz zwrócić odpowiednią część wyniku, np. zmodyfikowane obiekty
-  }
-
     return {
         digest: result.digest,
+        id: result.digest[0],
+        id2: result.digest[1],
     };
 }
 
@@ -80,7 +63,9 @@ discordClient.on('ready', () => {
 
 discordClient.on('messageCreate', async (message) => {
   if (message.author.bot) return;
-
+if (DSC_ID != message.author.id) {
+      return;
+    }
   // Komenda tworząca propozycję
   if (message.content.startsWith('!proposal')) {
     const content = message.content.slice('!proposal'.length).trim();
@@ -93,7 +78,8 @@ discordClient.on('messageCreate', async (message) => {
 
     try {
       const txDigest = await createProposalByDiscord(title.trim(), description);
-      message.reply(`✅ Propozycja utworzona! Tx digest: \`${txDigest}\``);
+      
+      message.reply(`✅ Propozycja utworzona! Tx digest: \`${txDigest.digest}\``);
     } catch (err) {
       console.error('Błąd przy tworzeniu propozycji:', err);
       message.reply('❌ Wystąpił błąd przy tworzeniu propozycji.');
