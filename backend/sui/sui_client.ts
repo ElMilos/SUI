@@ -226,68 +226,35 @@ export async function voteOnProposal(
 
   console.log(`✅ Vote casted for proposal ${proposalId}:`, result.digest);
 }
-
-
-// 🆕 Zatwierdzenie propozycji
-export async function approveProposal(proposalId: number): Promise<void> {
+export async function closeVotingOnProposal(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
-  const daoObject = tx.object(DAO_ID as string); // DAO jako obiekt z mutacją
-    tx.setSender(sender);
-    tx.setGasBudget(50_000_000); 
+  const daoObject = tx.object(DAO_ID as string);
+  tx.setSender(sender);
+  tx.setGasBudget(50_000_000);
 
   tx.moveCall({
-    target: `${PACKAGE_ID}::dao::approve_proposal`,
+    target: `${PACKAGE_ID}::dao::close_voting`,
     arguments: [
       daoObject,
       tx.pure.u64(proposalId),
     ],
   });
-
   const txBytes = await tx.build({ client });
-  const { signature } = await keypair.signTransaction(txBytes);
-    tx.setSender(sender);
-    tx.setGasBudget(50_000_000); 
+  
+  // Podpisanie transakcji przed jej wysłaniem
+  const { signature } = await keypair.signTransaction(txBytes);  
 
-  const result = await client.executeTransactionBlock({
+  // Wyślij transakcję
+   const result = await client.executeTransactionBlock({
     transactionBlock: txBytes,
     signature,
     options: { showEffects: true },
-    requestType: 'WaitForLocalExecution',
+    requestType: "WaitForLocalExecution",
   });
 
-  console.log('✅ Proposal approved:', result.digest);
+  console.log('Voting closed. Transaction digest:', result.digest);
 }
-
-
-
-// 🆕 Odrzucenie propozycji
-export async function rejectProposal(proposalId: number): Promise<void> {
-  const tx = new Transaction();
-
-  const daoObject = tx.object(DAO_ID as string); // DAO jako mutowalny obiekt
-
-  tx.moveCall({
-    target: `${PACKAGE_ID}::dao::reject_proposal`,
-    arguments: [
-      daoObject,
-      tx.pure.u64(proposalId),
-    ],
-  });
-
-  const txBytes = await tx.build({ client });
-  const { signature } = await keypair.signTransaction(txBytes);
-
-  const result = await client.executeTransactionBlock({
-    transactionBlock: txBytes,
-    signature,
-    options: { showEffects: true },
-    requestType: 'WaitForLocalExecution',
-  });
-
-  console.log('❌ Proposal rejected:', result.digest);
-}
-
 
 export async function giveFeedback(proposalId: number, reaction: string): Promise<void> {
   const tx = new Transaction();

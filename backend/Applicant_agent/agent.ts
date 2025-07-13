@@ -170,6 +170,23 @@ discordClient.on("messageCreate", async (message) => {
       message.reply(`❌ Wystąpił błąd przy rozpoczynaniu głosowania.`);
     }
   }
+  if (message.content.startsWith('!EndVote')) {
+    const parts = message.content.trim().split(' ');
+    if (parts.length < 2 || isNaN(Number(parts[1]))) {
+      message.reply('Proszę użyj formatu: `!Endvote <id propozycji>` (np. `!vote 3`)');
+      return;
+    }
+
+    const proposalId = Number(parts[1]);
+
+    try {
+      await Sui.closeVotingOnProposal(proposalId);
+      message.reply(`✅ Głosowanie dla propozycji ${proposalId} zakończone.`);
+    } catch (err) {
+      console.error('Błąd przy kończeniu głosowania:', err);
+      message.reply(`❌ Wystąpił błąd przy kończeniu głosowania.`);
+    }
+  }
 });
 
 discordClient.login(DISCORD_TOKEN);
