@@ -57,3 +57,9 @@ This project introduces an intelligent AI agent that:
 | Backend            | Python / Node.js                             |
 | Off-chain APIs     | Discord, Twitter                             |
 | Frontend           | React Dashboard                              |
+
+---
+
+## 🧾 Project overview
+
+[Canva presenattion](https://www.canva.com/design/DAGs8p5Mz5U/oz34NW9xuVcv9GJQHRrPYg/edit?utm_content=DAGs8p5Mz5U&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
