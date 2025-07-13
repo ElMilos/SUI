@@ -50,7 +50,7 @@ interface DaoObject {
 export async function inviteMember(daoAddress: string, newMemberAddress: string) {
   const tx = new Transaction();
   tx.moveCall({
-    target: `${PACKAGE_ID}::governance::invite_member`,
+    target: `${PACKAGE_ID}::dao::invite_member`,
     arguments: [
       tx.object(daoAddress),        // &mut DAO
       tx.pure.string(newMemberAddress),    // nowy członek

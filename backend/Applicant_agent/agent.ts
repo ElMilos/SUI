@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { SuiClient, getFullnodeUrl, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { bcs } from '@mysten/sui.js/bcs';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -23,6 +24,7 @@ import * as Sui from '../sui/sui_client';
 async function createProposalByDiscord(title: string, description: string) {
   const tx = new Transaction();
     tx.setSender(sender);
+    tx.setGasBudget(50_000_000); 
     tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
@@ -36,26 +38,51 @@ async function createProposalByDiscord(title: string, description: string) {
   const txBytes = await tx.build({ client: suiClient});
   const { signature } = await keypair.signTransaction(txBytes);
 
-  const result = await suiClient.executeTransactionBlock({
-    transactionBlock: txBytes,
-    signature,
-    options: { showEffects: true },
-    requestType: 'WaitForLocalExecution',
-  });
+    const result = await suiClient.executeTransactionBlock({
+        transactionBlock: txBytes,
+        signature,
+        options: {
+            showEffects: true,
+            showRawEffects: true, // To jest kluczowe, aby 'output' było dostępne w 'result'
+        },
+        requestType: 'WaitForLocalExecution',
+    });
 
-  return result.digest;
+    let proposalId: string | undefined;
+
+     if (result.effects) {
+    const {objectChanges, events } = result;
+
+    console.log('Zmienione obiekty:', objectChanges); // Zmienione obiekty mogą zawierać zwrócone dane
+
+    // Jeśli transakcja generuje zdarzenia, mogą zawierać istotne dane zwrócone przez metodę
+    if (events) {
+      console.log('Wydarzenia transakcji:', events);
+    }
+
+    // Możesz również szukać innych szczegółów, np. w 'rawTransaction' (jeśli dostępne)
+    if (result.rawTransaction) {
+      console.log('Surowa transakcja:', result.rawTransaction);
+    }
+
+    return objectChanges; // W tym miejscu możesz zwrócić odpowiednią część wyniku, np. zmodyfikowane obiekty
+  }
+
+    return {
+        digest: result.digest,
+    };
 }
 
 discordClient.on('ready', () => {
   console.log(`Bot zalogowany jako ${discordClient.user?.tag}`);
 });
 
-discordClient.on('messageCreate', async (message) => {
-  if (message.author.bot) return; // ignoruj inne boty
 
+discordClient.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  // Komenda tworząca propozycję
   if (message.content.startsWith('!proposal')) {
-    // Oczekujemy formatu:
-    // !proposal Tytuł | Opis propozycji
     const content = message.content.slice('!proposal'.length).trim();
     const [title, ...descParts] = content.split('|');
     if (!title || descParts.length === 0) {
@@ -66,12 +93,33 @@ discordClient.on('messageCreate', async (message) => {
 
     try {
       const txDigest = await createProposalByDiscord(title.trim(), description);
-      message.reply(`Propozycja utworzona pomyślnie! Tx digest: ${txDigest}`);
+      message.reply(`✅ Propozycja utworzona! Tx digest: \`${txDigest}\``);
     } catch (err) {
       console.error('Błąd przy tworzeniu propozycji:', err);
-      message.reply('Wystąpił błąd przy tworzeniu propozycji.');
+      message.reply('❌ Wystąpił błąd przy tworzeniu propozycji.');
+    }
+  }
+
+  // Komenda rozpoczynająca głosowanie
+  if (message.content.startsWith('!vote')) {
+    const parts = message.content.trim().split(' ');
+    if (parts.length < 2 || isNaN(Number(parts[1]))) {
+      message.reply('Proszę użyj formatu: `!vote <id propozycji>` (np. `!vote 3`)');
+      return;
+    }
+
+    const proposalId = Number(parts[1]);
+
+    try {
+      await Sui.startVoting(proposalId);
+      message.reply(`✅ Głosowanie dla propozycji ${proposalId} rozpoczęte.`);
+    } catch (err) {
+      console.error('Błąd przy rozpoczynaniu głosowania:', err);
+      message.reply(`❌ Wystąpił błąd przy rozpoczynaniu głosowania.`);
     }
   }
 });
+
+
 
 discordClient.login(DISCORD_TOKEN);
