@@ -1,9 +1,11 @@
-module 0x1::governance {
+module 0x0::governance {
     use sui::tx_context::TxContext;
     use sui::object;
+    use sui::object::UID;
     use std::vector;
     use sui::transfer;
-    use sui::object::UID;
+    use sui::event;
+    use sui::bcs;  // Importujemy BCS do serializacji
 
     // — kody błędów
     const E_NOT_MEMBER: u64 = 1;
@@ -16,6 +18,13 @@ module 0x1::governance {
         Voting,
         Approved,
         Rejected
+    }
+
+    /// Event emisji akcji w DAO
+    public struct DAOEvent has copy, drop {
+        dao: address,     // właściciel DAO
+        ty: u8,           // 0=invite,1=propose,2=vote,3=execute
+        data: vector<u8>, // np. zakodowany new_member lub description
     }
 
     /// Propozycja (przechowywana w wektorze DAO)
@@ -58,9 +67,16 @@ module 0x1::governance {
         new_member: address,
         ctx: &mut TxContext
     ) {
-        let sender = ctx.sender();
+        let sender = ctx.sender();  // Nowa definicja zmiennej sender
         assert!(is_member(sender, dao), E_NOT_MEMBER);
         vector::push_back(&mut dao.members, new_member);
+
+        // Emitowanie eventu
+        event::emit(DAOEvent {
+            dao: sender,                       // pole `dao`
+            ty: 0,                             // Invite
+            data: bcs::to_bytes(&new_member),   // zakodowany address
+        });
     }
 
     /// Składasz propozycję (każdy członek)
@@ -70,7 +86,7 @@ module 0x1::governance {
         deadline: u64,
         ctx: &mut TxContext
     ) {
-        let sender = ctx.sender();
+        let sender = ctx.sender();  // Zmienna sender
         assert!(is_member(sender, dao), E_NOT_MEMBER);
         let pid = dao.next_proposal_id;
         dao.next_proposal_id = pid + 1;
@@ -85,6 +101,13 @@ module 0x1::governance {
             deadline,
         };
         vector::push_back(&mut dao.proposals, prop);
+
+        // Emitowanie eventu dla propozycji
+        event::emit(DAOEvent {
+            dao: sender,
+            ty: 1,  // Typ 1 dla propozycji
+            data: bcs::to_bytes(&description),  // Zakodowany opis propozycji
+        });
     }
 
     /// Głosowanie (0=yes, 1=no, inaczej=abstain)
@@ -94,7 +117,7 @@ module 0x1::governance {
         code: u8,
         ctx: &mut TxContext
     ) {
-        let sender = ctx.sender();
+        let sender = ctx.sender();  // Zmienna sender
         assert!(is_member(sender, dao), E_NOT_MEMBER);
         let len = vector::length(&dao.proposals);
         let mut i: u64 = 0;
@@ -103,18 +126,21 @@ module 0x1::governance {
             if (p.id == proposal_id) {
                 let now = ctx.epoch();
                 assert!(p.deadline > now, E_DEADLINE_PASSED);
-                if (code == 0) {
-                    p.yes_count = p.yes_count + 1;
-                } else if (code == 1) {
-                    p.no_count = p.no_count + 1;
-                } else {
-                    p.abstain_count = p.abstain_count + 1;
-                };
+                if (code == 0)      { p.yes_count = p.yes_count + 1; }
+                else if (code == 1) { p.no_count = p.no_count + 1;  }
+                else                { p.abstain_count = p.abstain_count + 1; };
                 p.status = ProposalStatus::Voting;
+
+                // Emitowanie eventu dla głosowania
+                event::emit(DAOEvent {
+                    dao: sender,
+                    ty: 2,  // Typ 2 dla głosowania
+                    data: bcs::to_bytes(&proposal_id),  // Zakodowany proposal_id
+                });
                 return;
             };
             i = i + 1;
-        }; 
+        };
         abort E_PROPOSAL_NOT_FOUND;
     }
 
@@ -131,11 +157,15 @@ module 0x1::governance {
             let mut p = vector::borrow_mut(&mut dao.proposals, i);
             if (p.id == proposal_id) {
                 assert!(p.deadline <= now, E_DEADLINE_PASSED);
-                if (p.yes_count > p.no_count) {
-                    p.status = ProposalStatus::Approved;
-                } else {
-                    p.status = ProposalStatus::Rejected;
-                };
+                if (p.yes_count > p.no_count) { p.status = ProposalStatus::Approved; }
+                else                          { p.status = ProposalStatus::Rejected; };
+
+                // Emitowanie eventu dla wykonania propozycji
+                event::emit(DAOEvent {
+                    dao: ctx.sender(),
+                    ty: 3,  // Typ 3 dla wykonania propozycji
+                    data: vector::empty(),  // Możesz dodać dodatkowe dane
+                });
                 return;
             };
             i = i + 1;
@@ -143,14 +173,12 @@ module 0x1::governance {
         abort E_PROPOSAL_NOT_FOUND;
     }
 
-    /// Sprawdza, czy `addr` jest w `members`
+    // Sprawdzenie, czy adres jest członkiem DAO
     fun is_member(addr: address, dao: &DAO): bool {
         let len = vector::length(&dao.members);
         let mut i: u64 = 0;
         while (i < len) {
-            if (*vector::borrow(&dao.members, i) == addr) {
-                return true;
-            };
+            if (*vector::borrow(&dao.members, i) == addr) { return true; };
             i = i + 1;
         };
         false

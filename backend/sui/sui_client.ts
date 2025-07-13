@@ -14,21 +14,22 @@ const SUI_NETWORK = process.env.SUI_NETWORK; // np. 'devnet'
 const FULLNODE_URL = process.env.SUI_FULLNODE_URL || (SUI_NETWORK ? getFullnodeUrl(SUI_NETWORK as 'mainnet' | 'testnet' | 'devnet' | 'localnet') : undefined);
 
 // Walidacja
-if (!PACKAGE_ID) {
-  throw new Error('Brakuje zmiennej środowiskowej SUI_PACKAGE_ID w pliku .env');
-}
-if (!DAO_ID) {
-  throw new Error('Brakuje zmiennej środowiskowej DAO_ID w pliku .env');
-}
-if (!PRIVATE_KEY_BASE64) {
-  throw new Error('Brakuje zmiennej środowiskowej SUI_PRIVATE_KEY w pliku .env');
-}
-if (!FULLNODE_URL) {
-  throw new Error('Brakuje zmiennej środowiskowej SUI_FULLNODE_URL lub SUI_NETWORK w pliku .env');
-}
+if (!PACKAGE_ID) throw new Error('Brakuje zmiennej środowiskowej SUI_PACKAGE_ID');
+if (!DAO_ID) throw new Error('Brakuje zmiennej środowiskowej DAO_ID');
+if (!PRIVATE_KEY_BASE64) throw new Error('Brakuje zmiennej środowiskowej SUI_PRIVATE_KEY');
+if (!FULLNODE_URL) throw new Error('Brakuje zmiennej środowiskowej SUI_FULLNODE_URL lub SUI_NETWORK');
+
 
 // Inicjalizacja klucza i klienta
-const secretKey = Buffer.from(PRIVATE_KEY_BASE64, 'base64').slice(1);
+const secretKey = Buffer.from(
+  "85c98bc44f9bb7cedf5672c21ee5194d44659176870bb8751c33ee9ca80c229a",
+  "hex"
+);
+if (secretKey.length !== 32) {
+  throw new Error(
+    `Invalid secret key length. Expected 32 bytes, got ${secretKey.length}`
+  );
+}
 const keypair = Ed25519Keypair.fromSecretKey(secretKey);
 const client = new SuiClient({ url: FULLNODE_URL });
 
@@ -44,6 +45,29 @@ interface DaoProposal {
 
 interface DaoObject {
   proposals: DaoProposal[];
+}
+
+export async function inviteMember(daoAddress: string, newMemberAddress: string) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::governance::invite_member`,
+    arguments: [
+      tx.object(daoAddress),        // &mut DAO
+      tx.pure.string(newMemberAddress),    // nowy członek
+    ],
+  });
+
+  const txBytes = await tx.build({ client });
+  const { signature } = await keypair.signTransaction(txBytes);
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: txBytes,
+    signature,
+    options: { showEffects: true },
+    requestType: 'WaitForLocalExecution',
+  });
+
+  console.log('✅ Member invited:', result.digest);
 }
 
 // ✅ Istniejąca funkcja: pobiera DAO
@@ -137,15 +161,12 @@ export async function createProposal(title: string, description: string): Promis
 
 
 // 🆕 Start voting (tylko autor)
-export async function startVoting(
-  proposalId: number
-): Promise<void> {
+export async function startVoting(proposalId: number): Promise<void> {
   const tx = new Transaction();
 
-  // DAO_ID jako obiekt mutowalny
-  const daoObject = tx.object(DAO_ID as string); // &mut DAO
+  const daoObject = tx.object(DAO_ID as string);  // &mut DAO
 
-  // Rozpocznij głosowanie na DAO
+  // Rozpoczęcie głosowania
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::start_voting`,
     arguments: [
@@ -154,7 +175,7 @@ export async function startVoting(
     ],
   });
 
-  // Rozsyłanie sygnału do innych agentów na całej sieci
+  // Rozsyłanie sygnału do agentów
   tx.moveCall({
     target: `${PACKAGE_ID}::dao::notify_agents`,
     arguments: [
@@ -163,25 +184,28 @@ export async function startVoting(
     ],
   });
 
-
   const txBytes = await tx.build({ client });
-  const { signature } = await keypair.signTransaction(txBytes);
+  
+  // Podpisanie transakcji
+  const { signature } = await keypair.signTransaction(txBytes);  // Sign the transaction
 
   const result = await client.executeTransactionBlock({
     transactionBlock: txBytes,
     signature,
     options: { showEffects: true },
-    requestType: 'WaitForLocalExecution',
+    requestType: "WaitForLocalExecution",
   });
 
   console.log(`✅ Voting started and vote casted for proposal ${proposalId}:`, result.digest);
 }
 
+
+// Endpoint do głosowania
 export async function voteOnProposal(
   proposalId: number,
   voteCode: 0 | 1 | 2,
   sentiment: number,
-  confidence: number,
+  confidence: number
 ): Promise<void> {
   const tx = new Transaction();
 
@@ -193,24 +217,28 @@ export async function voteOnProposal(
       daoObject,
       tx.pure.u64(proposalId),
       tx.pure.u8(voteCode),
-      tx.pure.u64(Math.floor(Date.now() / 1000)),
+      tx.pure.u64(Math.floor(Date.now() / 1000)), // Timestamp in seconds
       tx.pure.u64(sentiment),
       tx.pure.u64(confidence),
     ],
   });
 
   const txBytes = await tx.build({ client });
-  const { signature } = await keypair.signTransaction(txBytes);
+  
+  // Podpisanie transakcji przed jej wysłaniem
+  const { signature } = await keypair.signTransaction(txBytes);  // Sign the transaction
 
+  // Wykonanie transakcji
   const result = await client.executeTransactionBlock({
     transactionBlock: txBytes,
     signature,
     options: { showEffects: true },
-    requestType: 'WaitForLocalExecution',
+    requestType: "WaitForLocalExecution",
   });
 
   console.log(`✅ Vote casted for proposal ${proposalId}:`, result.digest);
 }
+
 
 // 🆕 Zatwierdzenie propozycji
 export async function approveProposal(proposalId: number): Promise<void> {

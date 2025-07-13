@@ -1,5 +1,5 @@
 import express from "express";
-import { getDaoState, createProposal, startVoting } from "./sui_client";
+import { getDaoState, createProposal, startVoting, inviteMember } from "./sui_client";
 import { Server as IOServer } from "socket.io";
 
 const router = express.Router();
@@ -8,11 +8,13 @@ if (!DAO_ID) {
   throw new Error("Brakuje zmiennej środowiskowej DAO_ID w pliku .env");
 }
 
-async function broadcastProposals(io: import("socket.io").Server) {
+// Funkcja broadcast wysyłająca propozycje do wszystkich agentów
+async function broadcastProposals(io: IOServer) {
   const dao = await getDaoState(DAO_ID as string);
   io.emit("proposals", dao.proposals);
 }
 
+// Endpoint do pobierania stanu DAO
 router.get("/state", async (req, res) => {
   try {
     const dao = await getDaoState(DAO_ID as string);
@@ -22,6 +24,7 @@ router.get("/state", async (req, res) => {
   }
 });
 
+// Endpoint do tworzenia propozycji
 router.post("/proposal", async (req, res) => {
   const { title, description, summary } = req.body;
   if (!title || !description) {
@@ -32,13 +35,14 @@ router.post("/proposal", async (req, res) => {
     const digest = await createProposal(title, description);
     res.json({ digest });
 
-    const io = req.app.get("io") as import("socket.io").Server;
+    const io = req.app.get("io") as IOServer;
     await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// Endpoint do głosowania
 router.post("/vote", async (req, res) => {
   const { proposalId, voteCode, sentiment, confidence } = req.body;
 
@@ -60,6 +64,31 @@ router.post("/vote", async (req, res) => {
 
     const io = req.app.get("io") as IOServer;
     io.emit("new_vote", { proposalId, voteCode, sentiment, confidence }); // Wysyłanie powiadomienia do agentów
+    await broadcastProposals(io);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint do zapraszania członków do DAO
+router.post("/invite", async (req, res) => {
+  const { newMemberAddress } = req.body;
+
+  if (!newMemberAddress) {
+    return res.status(400).json({ error: "Missing new member address" });
+  }
+
+  try {
+    // Wywołanie inviteMember (zapraszanie nowego członka)
+    await inviteMember(DAO_ID as string, newMemberAddress);
+
+    res.json({ message: "Member invited successfully" });
+
+    // Powiadomienie agentów przez WebSocket
+    const io = req.app.get("io") as IOServer;
+    io.emit("new_invite", { newMemberAddress });
+
+    // Opcjonalnie - aktualizacja stanu DAO na frontendzie
     await broadcastProposals(io);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
