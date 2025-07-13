@@ -23,12 +23,13 @@ import * as Sui from '../sui/sui_client';
 async function createProposalByDiscord(title: string, description: string) {
   const tx = new Transaction();
     tx.setSender(sender);
-  tx.moveCall({
+    tx.moveCall({
     target: `${PACKAGE_ID}::dao::create_proposal`,
     arguments: [
-        tx.object(DAO_ID), 
-        tx.pure.string(title),
-        tx.pure.string(description),
+      tx.object(DAO_ID as string),               // &mut DAO
+      tx.pure.string(title),                     // title: string
+      tx.pure.string(description),               // summary: string
+      tx.pure.u64(Date.now()),                   // date: u64
     ],
   });
 
